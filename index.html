@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Rubikku — learn to solve the cube</title>
+    <meta
+      name="description"
+      content="Rubikku is a friendly coach that teaches you to solve a 3x3 cube, one layer at a time, with a 3D cube you can turn."
+    />
+    <meta name="application-name" content="Rubikku" />
+    <meta name="apple-mobile-web-app-title" content="Rubikku" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f1ea" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <script>
+      // Runs before first paint so the page never flashes the wrong theme.
+      // Keep in sync with src/ui/theme.ts (storage key + attribute names).
+      ;(function () {
+        var choice = 'system'
+        var motion = 'full'
+        try {
+          var raw = localStorage.getItem('rubikku:settings')
+          if (raw) {
+            var saved = JSON.parse(raw)
+            var state = saved && saved.state
+            if (state && (state.theme === 'light' || state.theme === 'dark')) choice = state.theme
+            if (state && state.motion === 'reduced') motion = 'reduced'
+          }
+        } catch (e) {}
+        var dark =
+          choice === 'dark' ||
+          (choice === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var root = document.documentElement
+        root.setAttribute('data-theme', dark ? 'dark' : 'light')
+        root.setAttribute('data-motion', motion)
+        root.style.colorScheme = dark ? 'dark' : 'light'
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', dark ? '#0d0f14' : '#f4f1ea')
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Rubikku needs JavaScript to show the cube.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

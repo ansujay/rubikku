@@ -1,0 +1,110 @@
+@import '@fontsource-variable/bricolage-grotesque/index.css';
+@import '@fontsource-variable/figtree/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
+
+@import 'tailwindcss';
+@import './tokens.css';
+@import './base.css';
+@import './components.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@custom-variant motion-ok (&:where(:root:not([data-motion='reduced']) *));
+
+/* Static tokens → Tailwind theme */
+@theme {
+  --color-*: initial;
+
+  --font-display: 'Bricolage Grotesque Variable', 'Figtree Variable', system-ui, sans-serif;
+  --font-sans: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 3.125rem;
+  --text-5xl: 3.75rem;
+  --text-5xl--line-height: 3.75rem;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --breakpoint-xs: 26rem;
+}
+
+/* Theme-dependent tokens → Tailwind utilities that follow the active theme */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-inset: var(--inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-edge: var(--accent-edge);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-accent-ink: var(--accent-ink);
+  --color-focus: var(--focus);
+  --color-scrim: var(--scrim);
+
+  --color-cube-body: var(--cube-body);
+  --color-cube-white: var(--cube-white);
+  --color-cube-white-edge: var(--cube-white-edge);
+  --color-cube-white-soft: var(--cube-white-soft);
+  --color-cube-white-text: var(--cube-white-text);
+  --color-cube-yellow: var(--cube-yellow);
+  --color-cube-yellow-edge: var(--cube-yellow-edge);
+  --color-cube-yellow-soft: var(--cube-yellow-soft);
+  --color-cube-yellow-text: var(--cube-yellow-text);
+  --color-cube-green: var(--cube-green);
+  --color-cube-green-edge: var(--cube-green-edge);
+  --color-cube-green-soft: var(--cube-green-soft);
+  --color-cube-green-text: var(--cube-green-text);
+  --color-cube-blue: var(--cube-blue);
+  --color-cube-blue-edge: var(--cube-blue-edge);
+  --color-cube-blue-soft: var(--cube-blue-soft);
+  --color-cube-blue-text: var(--cube-blue-text);
+  --color-cube-red: var(--cube-red);
+  --color-cube-red-edge: var(--cube-red-edge);
+  --color-cube-red-soft: var(--cube-red-soft);
+  --color-cube-red-text: var(--cube-red-text);
+  --color-cube-orange: var(--cube-orange);
+  --color-cube-orange-edge: var(--cube-orange-edge);
+  --color-cube-orange-soft: var(--cube-orange-soft);
+  --color-cube-orange-text: var(--cube-orange-text);
+  --color-on-green: var(--on-green);
+  --color-on-red: var(--on-red);
+  --color-on-yellow: var(--on-yellow);
+  --color-on-orange: var(--on-orange);
+
+  --shadow-1: var(--elev-1);
+  --shadow-2: var(--elev-2);
+  --shadow-3: var(--elev-3);
+  --shadow-pop: var(--elev-pop);
+}

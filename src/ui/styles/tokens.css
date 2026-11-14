@@ -1,0 +1,201 @@
+/*
+ * Rubikku design tokens.
+ * Every colour, radius, shadow and motion value in the app comes from here.
+ * Feature code uses the Tailwind utilities generated from these (bg-surface,
+ * text-ink-muted, rounded-lg, shadow-2 …) or var(--token) — never raw hex.
+ *
+ * Themes are scoped by [data-theme] so a subtree can preview the other theme.
+ */
+
+:root {
+  /* Type: --font-display / --font-sans / --font-mono and the type scale are declared in
+     index.css (@theme) so Tailwind owns them; use font-display, font-mono, text-sm … */
+
+  /* Radius — "sticker" corners: generous, never pill-shaped except true pills */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* Motion */
+  --dur-instant: 90ms;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+  --dur-slower: 560ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+  --ease-spring: linear(
+    0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.067 22.5%,
+    1.089 25.6%, 1.092 29.1%, 1.073 34.2%, 1.021 45.9%, 1.004 53.9%, 0.997 63.9%, 1
+  );
+
+  /* Keycap depth: how far a pressable surface sits above its edge */
+  --key-depth: 3px;
+
+  /* Layout */
+  --sidebar-w: 240px;
+  --rail-w: 88px;
+  --bottom-nav-h: 68px;
+  --topbar-h: 56px;
+  --content-max: 1080px;
+}
+
+/* ───────────────────────── Light — "Daylight desk" ───────────────────────── */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f4f1ea;
+  --bg-sunken: #ebe7dd;
+  --surface: #fffefb;
+  --surface-2: #f9f6f0;
+  --inset: #efebe2;
+  --line: #e3ded2;
+  --line-strong: #cdc6b6;
+
+  --ink: #1b1c20;
+  --ink-muted: #585a63;
+  /* AA (≥4.5:1) on bg, surface and inset — measured by src/ui/contrast.test.ts */
+  --ink-faint: #65676e;
+  --ink-inverse: #fffefb;
+
+  /* The cube. Each colour has a job (see DESIGN.md). */
+  --cube-body: #17181c;
+  --cube-white: #ffffff;
+  --cube-white-edge: #cfc9bb;
+  /* White drawn as a thin mark (move stripes) needs to show up on white surfaces. */
+  --cube-white-mark: #b9b2a2;
+  --cube-white-soft: #f1ede4;
+  --cube-white-text: #585a63;
+  --cube-yellow: #ffd12e;
+  --cube-yellow-edge: #d6a400;
+  --cube-yellow-soft: #fff3c2;
+  --cube-yellow-text: #7d5a00;
+  --cube-green: #1fae58;
+  --cube-green-edge: #13803d;
+  --cube-green-soft: #dcf4e5;
+  --cube-green-text: #0f6b35;
+  --cube-blue: #2664ec;
+  --cube-blue-edge: #1846b8;
+  --cube-blue-soft: #e0eaff;
+  --cube-blue-text: #1a4fd0;
+  --cube-red: #d93235;
+  --cube-red-edge: #b02428;
+  --cube-red-soft: #fde2e2;
+  --cube-red-text: #b9252a;
+  --cube-orange: #ff8a1f;
+  --cube-orange-edge: #d06a06;
+  --cube-orange-soft: #ffe9d1;
+  --cube-orange-text: #a54c00;
+  --sticker-outline: rgb(27 28 32 / 0.16);
+  /* An unpainted sticker: sunken and greyer than any cube colour, so it never reads as white. */
+  --sticker-empty: #d6d0c3;
+  --sticker-empty-line: #8f8a7e;
+
+  /* Roles */
+  --accent: var(--cube-blue);
+  --accent-edge: var(--cube-blue-edge);
+  --accent-soft: var(--cube-blue-soft);
+  --accent-text: var(--cube-blue-text);
+  --accent-ink: #ffffff;
+  /* Near-black on green, as at night: white on this green is only 2.9:1. */
+  --on-green: #062814;
+  --on-red: #ffffff;
+  --on-yellow: #2b2000;
+  --on-orange: #2b1500;
+  --focus: #2664ec;
+  --scrim: rgb(27 24 16 / 0.42);
+  --hold-fill: rgb(0 0 0 / 0.22);
+
+  /* Elevation — warm, soft, low */
+  --elev-1: 0 1px 0 rgb(40 34 20 / 0.04), 0 1px 3px rgb(40 34 20 / 0.06);
+  --elev-2: 0 1px 0 rgb(40 34 20 / 0.04), 0 6px 16px -4px rgb(40 34 20 / 0.12);
+  --elev-3: 0 2px 0 rgb(40 34 20 / 0.03), 0 18px 40px -12px rgb(40 34 20 / 0.22);
+  --elev-pop: 0 24px 64px -16px rgb(40 34 20 / 0.32), 0 2px 6px rgb(40 34 20 / 0.08);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+  /* Cube stage */
+  --stage-top: #fffdf7;
+  --stage-bottom: #ece7db;
+  --stage-grid: rgb(27 28 32 / 0.07);
+  --stage-spot: rgb(255 255 255 / 0.9);
+  --stage-shadow: rgb(40 34 20 / 0.28);
+}
+
+/* ───────────────────────── Dark — "Night session" ───────────────────────── */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0d0f14;
+  --bg-sunken: #08090d;
+  --surface: #161920;
+  --surface-2: #1c2029;
+  --inset: #10131a;
+  --line: #262b36;
+  --line-strong: #3a4150;
+
+  --ink: #f2f0ea;
+  --ink-muted: #a9acb6;
+  --ink-faint: #858995;
+  --ink-inverse: #0d0f14;
+
+  --cube-body: #05060a;
+  --cube-white: #f4f2ec;
+  --cube-white-edge: #a9a69d;
+  --cube-white-mark: #f4f2ec;
+  --cube-white-soft: #252933;
+  --cube-white-text: #d9d7d0;
+  --cube-yellow: #ffd84a;
+  --cube-yellow-edge: #b08a0c;
+  --cube-yellow-soft: #322a0d;
+  --cube-yellow-text: #ffd84a;
+  --cube-green: #36cf7a;
+  --cube-green-edge: #1c8e50;
+  --cube-green-soft: #0f2d1d;
+  --cube-green-text: #56dc90;
+  --cube-blue: #4f8dff;
+  --cube-blue-edge: #2a5ec7;
+  --cube-blue-soft: #14244a;
+  --cube-blue-text: #86b1ff;
+  --cube-red: #ff5a5c;
+  --cube-red-edge: #bd3639;
+  --cube-red-soft: #3a1618;
+  --cube-red-text: #ff8587;
+  --cube-orange: #ff9a3d;
+  --cube-orange-edge: #c26a18;
+  --cube-orange-soft: #38220e;
+  --cube-orange-text: #ffb066;
+  --sticker-outline: rgb(255 255 255 / 0.1);
+  --sticker-empty: #232730;
+  --sticker-empty-line: #5b6373;
+
+  --accent: var(--cube-blue);
+  --accent-edge: var(--cube-blue-edge);
+  --accent-soft: var(--cube-blue-soft);
+  --accent-text: var(--cube-blue-text);
+  --accent-ink: #06102a;
+  --on-green: #03200f;
+  --on-red: #2a0506;
+  --on-yellow: #2b2000;
+  --on-orange: #2b1500;
+  --focus: #86b1ff;
+  --scrim: rgb(2 3 6 / 0.66);
+  --hold-fill: rgb(0 0 0 / 0.28);
+
+  /* Elevation — in the dark, depth is a lit top edge plus a deep drop */
+  --elev-1: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.4);
+  --elev-2: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 20px -6px rgb(0 0 0 / 0.55);
+  --elev-3: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 20px 44px -12px rgb(0 0 0 / 0.7);
+  --elev-pop: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 28px 72px -16px rgb(0 0 0 / 0.85);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
+
+  --stage-top: #1b2030;
+  --stage-bottom: #0b0d13;
+  --stage-grid: rgb(255 255 255 / 0.055);
+  --stage-spot: rgb(108 150 255 / 0.2);
+  --stage-shadow: rgb(0 0 0 / 0.7);
+}

@@ -1,0 +1,475 @@
+/*
+ * Component CSS that is clearer as real CSS than as utility strings:
+ * the keycap press model, the slider, the cube stage and a few keyframes.
+ */
+
+@layer components {
+  /* ───────── Keycap: a face that sits on an edge and sinks when pressed ───────── */
+  .key {
+    --_face: var(--surface);
+    --_edge: var(--line-strong);
+    --_ink: var(--ink);
+    --_d: var(--key-depth);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--_face);
+    color: var(--_ink);
+    box-shadow: 0 var(--_d) 0 0 var(--_edge);
+    transform: translateY(0);
+    transition:
+      transform var(--dur-instant) var(--ease-out),
+      box-shadow var(--dur-instant) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out),
+      filter var(--dur-fast) var(--ease-out);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  @media (hover: hover) {
+    .key:hover:not(:disabled, [aria-disabled='true']) {
+      filter: brightness(1.05);
+    }
+  }
+  .key:active:not(:disabled, [aria-disabled='true']),
+  .key[data-pressed='true'] {
+    transform: translateY(var(--_d));
+    box-shadow: 0 0 0 0 var(--_edge);
+    transition-duration: 40ms;
+  }
+  .key:disabled,
+  .key[aria-disabled='true'] {
+    opacity: 0.45;
+  }
+
+  .key-primary {
+    --_face: var(--accent);
+    --_edge: var(--accent-edge);
+    --_ink: var(--accent-ink);
+  }
+  .key-secondary {
+    --_face: var(--surface);
+    --_edge: var(--line-strong);
+    --_ink: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+  .key-success {
+    --_face: var(--cube-green);
+    --_edge: var(--cube-green-edge);
+    --_ink: var(--on-green);
+  }
+  .key-reward {
+    --_face: var(--cube-yellow);
+    --_edge: var(--cube-yellow-edge);
+    --_ink: var(--on-yellow);
+  }
+  .key-danger {
+    --_face: var(--cube-red);
+    --_edge: var(--cube-red-edge);
+    --_ink: var(--on-red);
+  }
+  .key-ink {
+    --_face: var(--ink);
+    --_edge: color-mix(in oklab, var(--ink) 60%, var(--bg));
+    --_ink: var(--ink-inverse);
+  }
+  /* Flat variants have no edge: they squeeze instead of sinking. */
+  .key-ghost,
+  .key-soft {
+    --_d: 0px;
+    box-shadow: none;
+  }
+  .key-ghost {
+    --_face: transparent;
+    --_ink: var(--ink);
+  }
+  .key-soft {
+    --_face: var(--inset);
+    --_ink: var(--ink);
+  }
+  @media (hover: hover) {
+    .key-ghost:hover:not(:disabled, [aria-disabled='true']) {
+      background: var(--inset);
+      filter: none;
+    }
+    .key-soft:hover:not(:disabled, [aria-disabled='true']) {
+      background: var(--line);
+      filter: none;
+    }
+  }
+  .key-ghost:active:not(:disabled, [aria-disabled='true']),
+  .key-soft:active:not(:disabled, [aria-disabled='true']) {
+    transform: scale(0.95);
+    background: var(--line);
+  }
+
+  /* ───────── Slider (native range input, restyled) ───────── */
+  .slider {
+    --_pct: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+  .slider:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .slider::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--_fill, var(--accent)) 0 var(--_pct),
+      var(--inset) var(--_pct) 100%
+    );
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .slider::-moz-range-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--inset);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .slider::-moz-range-progress {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--_fill, var(--accent));
+  }
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -9px;
+    border-radius: 9px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    box-shadow:
+      0 3px 0 0 var(--line-strong),
+      var(--elev-1);
+    transition: transform var(--dur-fast) var(--ease-spring);
+  }
+  .slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 3px 0 0 var(--line-strong);
+  }
+  .slider:active::-webkit-slider-thumb {
+    transform: scale(1.12);
+  }
+  .slider:focus-visible {
+    outline: none;
+  }
+  .slider:focus-visible::-webkit-slider-thumb {
+    outline: 2.5px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .slider:focus-visible::-moz-range-thumb {
+    outline: 2.5px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ───────── Cube stage: the lit plinth every cube sits on ───────── */
+  .stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--r-xl);
+    border: 1px solid var(--line);
+    background:
+      radial-gradient(120% 80% at 50% 0%, var(--stage-spot), transparent 62%),
+      linear-gradient(180deg, var(--stage-top), var(--stage-bottom));
+    box-shadow: var(--highlight), var(--elev-1);
+  }
+  /* A floor grid in perspective, fading toward the horizon. */
+  .stage::before {
+    content: '';
+    position: absolute;
+    left: -40%;
+    right: -40%;
+    bottom: -8%;
+    height: 58%;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--stage-grid) 1.5px, transparent 1.5px),
+      linear-gradient(90deg, var(--stage-grid) 1.5px, transparent 1.5px);
+    background-size: 44px 44px;
+    background-position: center top;
+    transform: perspective(520px) rotateX(62deg);
+    transform-origin: 50% 100%;
+    mask-image: linear-gradient(to top, #000 10%, transparent 92%);
+    -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 92%);
+  }
+  .stage-shadow {
+    width: 38%;
+    max-width: 200px;
+    height: 18px;
+    margin-top: 10px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--stage-shadow), transparent);
+    filter: blur(5px);
+    opacity: 0.55;
+  }
+
+  /* ───────── Stage markers (StageTracker): height and colour say where a stage is ───────── */
+  .stage-marker {
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      background-color var(--dur-base) var(--ease-out);
+  }
+  /* Done: green, pressed in — the face has travelled down onto its edge. */
+  .stage-marker-done {
+    background: var(--cube-green);
+    color: var(--on-green);
+    transform: translateY(2px);
+    box-shadow:
+      inset 0 2px 0 rgb(0 0 0 / 0.16),
+      0 0 0 1px var(--cube-green-edge);
+  }
+  /* Current: blue, lifted on a tall edge. */
+  .stage-marker-current {
+    background: var(--accent);
+    color: var(--accent-ink);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 0 var(--accent-edge);
+  }
+  /* To do: a neutral keycap. */
+  .stage-marker-todo {
+    background: var(--surface);
+    color: var(--ink-muted);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 3px 0 0 var(--line-strong);
+  }
+  /* Locked: sunk into the page. */
+  .stage-marker-locked {
+    background: var(--inset);
+    color: var(--ink-faint);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  /* Peeked: locked, but he has looked inside. */
+  .stage-marker-peeked {
+    box-shadow: none;
+    outline: 2px dashed var(--accent-text);
+    outline-offset: -2px;
+    color: var(--accent-text);
+  }
+
+  /* ───────── Stickers being painted (CubeNet, face grids) ───────── */
+  /* Empty: a sunken grey cell with a dashed rim and a centre dot — never mistaken for white. */
+  .sticker-empty {
+    background: var(--sticker-empty);
+    color: var(--ink-faint);
+    box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.18);
+    outline: 1.5px dashed var(--sticker-empty-line);
+    outline-offset: -3px;
+  }
+  .sticker-empty-dot {
+    width: 18%;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: var(--sticker-empty-line);
+  }
+  /* Painted white: a solid white keycap standing on its edge. */
+  .sticker-white-key {
+    box-shadow:
+      inset 0 0 0 1px var(--sticker-outline),
+      inset 0 -0.18em 0 0 var(--cube-white-edge);
+  }
+
+  /* ───────── Small helpers ───────── */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes rk-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(0.6deg);
+  }
+}
+@keyframes rk-shadow-breathe {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleX(0.86);
+    opacity: 0.38;
+  }
+}
+@keyframes rk-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+@keyframes rk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Toasts: top of the content column (not the viewport), so they are centred over the page even
+ * with the sidebar open, and never sit on the phone tab bar, a lesson's bottom bar or the
+ * timer's buttons. The list itself ignores the pointer; only a toast can be tapped.
+ */
+.toaster {
+  position: fixed;
+  z-index: 70;
+  top: calc(var(--topbar-h) + 8px + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 12px;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .toaster {
+    top: calc(14px + env(safe-area-inset-top));
+    left: var(--rail-w);
+  }
+}
+@media (min-width: 1024px) {
+  .toaster {
+    left: var(--sidebar-w);
+  }
+}
+
+/* ───────── Celebrations (src/ui/celebrate.ts) ───────── */
+/* Moments sit where toasts do: the top of the content column, never over a page's own buttons. */
+.celebrate-moment-slot {
+  position: fixed;
+  z-index: 72;
+  top: calc(var(--topbar-h) + 8px + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding-inline: 12px;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .celebrate-moment-slot {
+    top: calc(14px + env(safe-area-inset-top));
+    left: var(--rail-w);
+  }
+}
+@media (min-width: 1024px) {
+  .celebrate-moment-slot {
+    left: var(--sidebar-w);
+  }
+}
+/* Milestones take over the content area: the page dims to the desk, a spotlight from above,
+   the stage's floor grid — the same set the cube always stands on. */
+.celebrate-takeover {
+  isolation: isolate;
+  background:
+    radial-gradient(70% 55% at 50% 0%, var(--stage-spot), transparent 70%),
+    var(--bg);
+}
+.celebrate-takeover::before {
+  content: '';
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  bottom: -6%;
+  height: 46%;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--stage-grid) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--stage-grid) 1.5px, transparent 1.5px);
+  background-size: 52px 52px;
+  transform: perspective(520px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, #000 10%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 92%);
+}
+/* The milestone's hero cube stands in its own pool of light, with a contact shadow under it. */
+.celebrate-cube-spot {
+  background: radial-gradient(closest-side, var(--stage-spot), transparent 100%);
+}
+.celebrate-cube-spot::after {
+  content: '';
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: 14%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--stage-shadow), transparent);
+}
+/* Tick: a green ring that grows off the thing he got right, once. */
+.celebrate-tick-ring {
+  position: fixed;
+  z-index: 85;
+  pointer-events: none;
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 3px var(--cube-green);
+  animation: rk-tick-ring 520ms var(--ease-out) forwards;
+}
+@keyframes rk-tick-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+@keyframes rk-skeleton-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* A display cabinet (Progress trophy room, the badge dialog): the stage's light, without the floor. */
+.cabinet {
+  position: relative;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line);
+  /* A plain surface (the stage is the only place a gradient is allowed): the badges stand on
+     their own little lit plinths instead. */
+  background: var(--surface);
+  box-shadow: var(--highlight), var(--elev-1);
+}
