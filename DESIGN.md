@@ -48,6 +48,13 @@ On the cube itself and in notation, colours mean *faces* (U white, D yellow, F g
 R red, L orange). That is the only place the "jobs" give way — and there the colour is always
 paired with a letter.
 
+The flag face is cube content, like `CubeNet`: the nine stickers of a flag (`FaceGrid`) and the
+designer's canvas show cube colours and are exempt from the "two cube colours in one component"
+rule. `FlagArt` is the one other exception to the colour jobs: it draws the real flag in its real
+colours (saffron, chakra blue, flag red and so on, fixed hexes that do not change with the theme)
+so a kid can compare it with the nine stickers beside it. Nothing but a flag picture may use them,
+and every `FlagArt` carries a label with the country's name.
+
 ## Type
 
 - **Bricolage Grotesque** (display, 700–800, tight tracking) — headlines, numbers that matter.

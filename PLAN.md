@@ -123,7 +123,7 @@ One `<Cube3D>` component used everywhere, controlled by state plus an imperative
 6. **Timer** — hold to start (space/touch), scramble, optional 15s inspection, ao5/ao12, personal
    bests, history, improvement chart.
 7. **Progress** — XP, levels, badges, daily streak, daily challenge.
-8. **Patterns** — gallery of fun patterns, each playable on the cube.
+8. **Patterns** — gallery of fun patterns, each playable on the cube; a Flags tab (21 flags with verified sequences, some from a rotated start with a "how to hold it" line) and a "Make your own" designer that searches the moves for any painted face.
 9. **Play** — free cube with scramble, undo/redo, reset, solve-hint.
 10. **Settings** — theme, sound, motion, turn speed, backup, reset.
 
