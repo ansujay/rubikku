@@ -210,6 +210,10 @@ export {
 export type { OptimalSolver, OptimalSolverOptions } from './optimal/optimalSolver'
 export type { SolverRequest, SolverResponse, SolverTransport } from './optimal/protocol'
 
+// --- One-face search: hold + shortest moves that put a 3x3 picture (a flag) on the front ------
+export { findFaceAlgs, faceShows, flagStart } from './faceSearch'
+export type { FaceGrid, FaceSolution, FaceSearchOptions } from './faceSearch'
+
 // --- Beginner-method stages, algorithm library, pattern library -------------------------------
 export { STAGE_IDS, BEGINNER_HOLD } from './stages'
 export type { StageId } from './stages'

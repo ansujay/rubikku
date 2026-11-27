@@ -3,6 +3,7 @@ import { STAGES } from '../../store'
 import { motion } from 'motion/react'
 import {
   BADGES,
+  countPatterns,
   LEVEL_TITLES,
   levelFromXp,
   useLearningPath,
@@ -353,7 +354,8 @@ function PathCard() {
 function HistoryCard() {
   const log = useProgress((s) => s.log)
   const counters = useProgress((s) => s.counters)
-  const patterns = useProgress((s) => s.patterns.length)
+  const patternList = useProgress((s) => s.patterns)
+  const { tricks: patterns, flags } = countPatterns(patternList)
   const [open, setOpen] = useState(false)
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -378,9 +380,10 @@ function HistoryCard() {
       </button>
       <motion.div initial={false} animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }} transition={springs.gentle} className="overflow-hidden" aria-hidden={!open}>
         <div className="border-t border-line px-5 pt-3 pb-5">
-          <dl className="grid grid-cols-3 gap-3 pb-3">
+          <dl className="grid grid-cols-2 gap-3 pb-3 sm:grid-cols-4">
             {[
               { label: 'Patterns', value: patterns },
+              { label: 'Flags', value: flags },
               { label: 'Moves read', value: counters.notationCorrect ?? 0 },
               { label: 'Dailies', value: counters.dailyChallenges ?? 0 },
             ].map((item) => (

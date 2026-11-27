@@ -3,6 +3,7 @@ import { BADGES } from './badges'
 import { addDays, daysBetween, isDateKey, localDateKey, weekOf, weekdayIndex } from './dates'
 import {
   applyEvent,
+  countPatterns,
   currentStreak,
   initialProgress,
   levelFromXp,
@@ -357,13 +358,59 @@ describe('sanitizeProgress', () => {
   })
 })
 
+describe('flags and pattern badges', () => {
+  const now = at(2026, 6, 15, 10)
+  const make = (data: ProgressData, ...ids: string[]) => {
+    const badges: string[] = []
+    for (const id of ids) {
+      const step = applyEvent(data, 'pattern-made', { patternId: id }, now)
+      data = step.data
+      badges.push(...step.result.newBadges.map((b) => b.id))
+    }
+    return { data, badges }
+  }
+
+  it('five flags do not award the pattern badges, three award Flag Bearer', () => {
+    const three = make(initialProgress(), 'flag-japan', 'flag-india', 'flag-peru')
+    expect(three.badges).toEqual(['flag-bearer'])
+    const five = make(three.data, 'flag-spain', 'flag-laos')
+    expect(five.badges).toEqual([])
+    expect(five.data.badges['pattern-collector']).toBeUndefined()
+  })
+
+  it('twelve flags are a World Tour; the designed flag is not one of them', () => {
+    const ids = Array.from({ length: 11 }, (_, i) => `flag-f${i}`)
+    const eleven = make(initialProgress(), ...ids, 'flag-own')
+    expect(eleven.data.badges['world-tour']).toBeUndefined()
+    expect(eleven.badges).toContain('flag-designer')
+    expect(make(eleven.data, 'flag-f11').badges).toEqual(['world-tour'])
+  })
+
+  it('tricks and flags count separately', () => {
+    const { data } = make(initialProgress(), 'a', 'b', 'c', 'd', 'flag-x', 'flag-own')
+    expect(countPatterns(data.patterns)).toEqual({ tricks: 4, flags: 1 })
+    expect(data.badges['pattern-collector']).toBeUndefined()
+    expect(make(data, 'e').badges).toEqual(['pattern-collector'])
+  })
+
+  it('old saves load unchanged', () => {
+    const old = { ...initialProgress(), patterns: ['checkerboard', 'cube-in-cube'] }
+    expect(sanitizeProgress(JSON.parse(JSON.stringify(old))).patterns).toEqual(old.patterns)
+  })
+
+  it('a flag completes the daily "make a pattern" challenge', () => {
+    const data: ProgressData = { ...initialProgress(), daily: { date: localDateKey(now), id: 'pattern-1', count: 0, items: [] } }
+    expect(applyEvent(data, 'pattern-made', { patternId: 'flag-india' }, now).result.dailyCompleted).toBeTruthy()
+  })
+})
+
 describe('badge catalogue', () => {
   it('has unique ids and covers the brief', () => {
     const ids = BADGES.map((badge) => badge.id)
     expect(new Set(ids).size).toBe(ids.length)
     for (const id of [
       'first-solve', 'streak-3', 'streak-7', 'streak-30', 'sub-5', 'sub-3', 'sub-2', 'sub-1',
-      'notation-master', 'pattern-collector', ...STAGE_IDS.map((stage) => `stage-${stage}`),
+      'notation-master', 'pattern-collector', 'flag-bearer', 'world-tour', 'flag-designer', ...STAGE_IDS.map((stage) => `stage-${stage}`),
     ]) {
       expect(ids).toContain(id)
     }

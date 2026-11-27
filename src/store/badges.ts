@@ -61,6 +61,9 @@ export const BADGES: readonly BadgeDef[] = [
   { id: 'algorithm-ace', name: 'Algorithm Ace', description: 'Practise 10 different algorithms.', category: 'skills', color: 'red', icon: 'cards' },
   { id: 'pattern-collector', name: 'Pattern Collector', description: 'Make 5 different patterns.', category: 'skills', color: 'green', icon: 'grid' },
   { id: 'pattern-curator', name: 'Pattern Curator', description: 'Make 12 different patterns.', category: 'skills', color: 'yellow', icon: 'grid' },
+  { id: 'flag-bearer', name: 'Flag Bearer', description: 'Make 3 different flags on your cube.', category: 'skills', color: 'red', icon: 'grid' },
+  { id: 'world-tour', name: 'World Tour', description: 'Make 12 different flags.', category: 'skills', color: 'blue', icon: 'grid' },
+  { id: 'flag-designer', name: 'Flag Designer', description: 'Design your own flag and make it on your cube.', category: 'skills', color: 'green', icon: 'grid' },
   { id: 'level-5', name: 'High Five', description: 'Reach level 5.', category: 'skills', color: 'yellow', icon: 'star' },
   { id: 'level-10', name: 'Double Digits', description: 'Reach level 10.', category: 'skills', color: 'red', icon: 'star' },
 ]

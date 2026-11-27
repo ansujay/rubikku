@@ -48,6 +48,7 @@ const TIERS: Record<string, BadgeTier> = {
   'notation-master': 2,
   'algorithm-ace': 2,
   'pattern-curator': 2,
+  'world-tour': 2,
   'level-5': 2,
   'level-10': 3,
 }
@@ -100,6 +101,10 @@ const FACES: Record<string, FaceMotif> = {
   'stage-yellow-corners-orient': { cells: [Y, Y, Y, Y, Y, Y, Y, Y, Y], sides: [[B, B, B], [R, R, R], [G, G, G], [O, O, O]] },
   'pattern-collector': { cells: [G, W, G, W, G, W, G, W, G] },
   'pattern-curator': { cells: [R, R, R, R, B, R, R, R, R] },
+  // Japan, India and a flag half-painted by hand.
+  'flag-bearer': { cells: [W, W, W, W, R, W, W, W, W] },
+  'world-tour': { cells: [O, O, O, W, B, W, G, G, G] },
+  'flag-designer': { cells: [B, Y, R, B, Y, R, B, Y, R] },
 }
 
 /** Text motifs: the number or the moves the badge is about. */
