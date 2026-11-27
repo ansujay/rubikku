@@ -91,22 +91,40 @@ function AlgorithmCard({ algorithm }: { algorithm: BeginnerAlgorithm }) {
   )
 }
 
-function StageGroup({ stage, algorithms }: { stage: StageInfo; algorithms: BeginnerAlgorithm[] }) {
+function StageHeading({ stage }: { stage: StageInfo }) {
   // The same stage marker as everywhere else: green and pressed in once the stage is learned.
   const state = useProgress((s) => (s.lessons[stage.id]?.completedAt ? 'done' : STAGES.find((x) => !s.lessons[x.id]?.completedAt)?.id === stage.id ? 'current' : 'todo'))
   return (
-    <Reveal as="section" className="mt-7 first:mt-0">
-      <div className="mb-3 flex items-center gap-3">
-        <StageMarker state={state} number={stage.number} size="sm" />
-        <div className="min-w-0 grow">
-          <h2 className="text-xl leading-6 text-ink">{stage.title}</h2>
-          <p className="truncate text-sm text-ink-muted">{stage.goal}</p>
-        </div>
-        <Link to={`/learn/${stage.id}`} className="flex min-h-11 shrink-0 items-center gap-1 rounded-sm px-3 text-sm font-bold text-accent-text hover:bg-accent-soft">
-          Lesson
-          <Icon name="chevronRight" size={15} weight={2.6} />
-        </Link>
+    <div className="mb-3 flex items-center gap-3">
+      <StageMarker state={state} number={stage.number} size="sm" />
+      <div className="min-w-0 grow">
+        <h2 className="text-xl leading-6 text-ink">{stage.title}</h2>
+        <p className="truncate text-sm text-ink-muted">{stage.goal}</p>
       </div>
+      <Link to={`/learn/${stage.id}`} className="flex min-h-11 shrink-0 items-center gap-1 rounded-sm px-3 text-sm font-bold text-accent-text hover:bg-accent-soft">
+        Lesson
+        <Icon name="chevronRight" size={15} weight={2.6} />
+      </Link>
+    </div>
+  )
+}
+
+/** A stage solved by moving pieces freely, with no algorithm to learn (so the numbering does not skip it). */
+function NoAlgorithmStage({ stage }: { stage: StageInfo }) {
+  return (
+    <Reveal as="section" className="mt-7 first:mt-0">
+      <StageHeading stage={stage} />
+      <div data-testid={`no-alg-stage-${stage.id}`} className="rounded-lg border border-dashed border-line-strong bg-surface p-4 text-sm text-ink-muted">
+        <span className="font-bold text-ink">No algorithm needed.</span> You bring the white edges up around the yellow centre one at a time, with a turn or two each. The lesson shows you how.
+      </div>
+    </Reveal>
+  )
+}
+
+function StageGroup({ stage, algorithms }: { stage: StageInfo; algorithms: BeginnerAlgorithm[] }) {
+  return (
+    <Reveal as="section" className="mt-7 first:mt-0">
+      <StageHeading stage={stage} />
       <motion.ul variants={staggerContainer(0.04, 0)} className="grid gap-3.5 lg:grid-cols-2">
         {algorithms.map((algorithm) => (
           <AlgorithmCard key={algorithm.id} algorithm={algorithm} />
@@ -124,6 +142,9 @@ export default function AlgorithmsPage() {
   const practisedIds = useProgress((s) => s.algorithms)
 
   const stages = useMemo(() => STAGES.filter((stage) => ALGORITHMS.some((a) => a.stage === stage.id)), [])
+  // Stages before the first one with an algorithm (the daisy): shown on the unfiltered list so it starts at 1.
+  const leadingStages = useMemo(() => STAGES.slice(0, STAGES.findIndex((stage) => stages.includes(stage))), [stages])
+  const showLeading = stageFilter === 'all' && query.trim() === ''
   const groups = stages
     .filter((stage) => stageFilter === 'all' || stage.id === stageFilter)
     .map((stage) => ({ stage, algorithms: ALGORITHMS.filter((a) => a.stage === stage.id && matchesSearch(a, query)) }))
@@ -186,7 +207,12 @@ export default function AlgorithmsPage() {
           <EmptyState icon="cards" title="No algorithm matches that" description="Try a name like “Sune”, or some moves like R U R'." />
         </Reveal>
       ) : (
-        groups.map((group) => <StageGroup key={group.stage.id} {...group} />)
+        <>
+          {showLeading && leadingStages.map((stage) => <NoAlgorithmStage key={stage.id} stage={stage} />)}
+          {groups.map((group) => (
+            <StageGroup key={group.stage.id} {...group} />
+          ))}
+        </>
       )}
     </Page>
   )
