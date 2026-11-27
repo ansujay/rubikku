@@ -214,6 +214,12 @@ export type { SolverRequest, SolverResponse, SolverTransport } from './optimal/p
 export { findFaceAlgs, faceShows, flagStart } from './faceSearch'
 export type { FaceGrid, FaceSolution, FaceSearchOptions } from './faceSearch'
 
+// --- Flags on the cube: hold + moves for 21 flags, their art specs, and the ones left out -----
+export { FLAGS, FLAG_FAMILIES, LEFT_OUT_FLAGS, getFlag } from './flags'
+export type { CubeFlag, FlagFamily, LeftOutFlag } from './flags'
+export { FLAG_PALETTE } from './flagPalette'
+export type { FlagArtSpec, FlagColor, FlagPaletteName } from './flagPalette'
+
 // --- Beginner-method stages, algorithm library, pattern library -------------------------------
 export { STAGE_IDS, BEGINNER_HOLD } from './stages'
 export type { StageId } from './stages'

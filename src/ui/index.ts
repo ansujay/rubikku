@@ -69,7 +69,7 @@ export { IsoCube, SCRAMBLED_FACES, type IsoCubeProps, type IsoFace } from './com
 export { CubeStage, type CubeStageProps } from './components/CubeStage'
 export { FaceGrid, type FaceGridProps } from './components/FaceGrid'
 export { FlagArt, type FlagArtProps, type FlagArtSpec, type FlagColor } from './components/FlagArt'
-export { FLAG_PALETTE, type FlagPaletteName } from './flagPalette'
+export { FLAG_PALETTE, type FlagPaletteName } from '../cube'
 export { CubeNet, type CubeNetProps } from './components/CubeNet'
 export { NET_CELLS, NET_FACE_LABEL, netNeighbor, netColors, netStickerLabel, type NetCell, type NetDirection } from './cubeNetLayout'
 export { Logo, type LogoProps } from './components/Logo'

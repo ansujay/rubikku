@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { FLAGS, getFlag } from '../../cube'
 import { BADGES } from '../../store'
 import {
   AnimatedNumber,
@@ -55,7 +56,6 @@ import {
   useTheme,
   type ButtonVariant,
   type CubeColor,
-  type FlagArtSpec,
   type Tone,
 } from '../../ui'
 import { celebrate } from '../rewards'
@@ -174,46 +174,19 @@ function CubeNetDemo() {
   )
 }
 
-// Local specs only: the real flag data lives in src/cube/flags.ts.
-const LETTER: Record<string, CubeColor> = { W: 'white', Y: 'yellow', G: 'green', B: 'blue', R: 'red', O: 'orange' }
-const stripes = (dir: 'h' | 'v', colors: string[], ratios?: number[]): FlagArtSpec => ({ kind: 'bands', dir, colors, ratios })
-const FLAG_DEMOS: { name: string; grid: string; spec: FlagArtSpec }[] = [
-  { name: 'Nigeria', grid: 'GWGGWGGWG', spec: stripes('v', ['green', 'white', 'green']) },
-  { name: 'Peru', grid: 'RWRRWRRWR', spec: stripes('v', ['red', 'white', 'red']) },
-  { name: 'Austria', grid: 'RRRWWWRRR', spec: stripes('h', ['red', 'white', 'red']) },
-  { name: 'Spain', grid: 'RRRYYYRRR', spec: stripes('h', ['crimson', 'yellow', 'crimson'], [1, 2, 1]) },
-  { name: 'Armenia', grid: 'RRRBBBOOO', spec: stripes('h', ['red', 'blue', 'apricot']) },
-  { name: 'Japan', grid: 'WWWWRWWWW', spec: { kind: 'disc', field: 'white', disc: 'red' } },
-  { name: 'Bangladesh', grid: 'GGGGRGGGG', spec: { kind: 'disc', field: 'darkGreen', disc: 'red', offset: -0.05, r: 0.33 } },
-  { name: 'Laos', grid: 'RRRBWBRRR', spec: { kind: 'bands', dir: 'h', colors: ['red', 'blue', 'red'], ratios: [1, 2, 1], disc: 'white' } },
-  { name: 'France', grid: 'BWRBWRBWR', spec: stripes('v', ['blue', 'white', 'red']) },
-  { name: 'Italy', grid: 'GWRGWRGWR', spec: stripes('v', ['green', 'white', 'red']) },
-  { name: 'Ireland', grid: 'GWOGWOGWO', spec: stripes('v', ['green', 'white', 'orange']) },
-  { name: 'Netherlands', grid: 'RRRWWWBBB', spec: stripes('h', ['red', 'white', 'blue']) },
-  { name: 'Colombia', grid: 'YYYBBBRRR', spec: stripes('h', ['yellow', 'blue', 'red'], [2, 1, 1]) },
-  { name: 'India', grid: 'OOOWBWGGG', spec: { kind: 'bands', dir: 'h', colors: ['saffron', 'white', 'green'], chakra: 'chakraBlue' } },
-  { name: 'Switzerland', grid: 'RWRWWWRWR', spec: { kind: 'cross', field: 'red', cross: 'white', short: true, square: true } },
-  { name: 'England', grid: 'WRWRRRWRW', spec: { kind: 'cross', field: 'white', cross: 'red' } },
-  { name: 'Sweden', grid: 'BYBYYYBYB', spec: { kind: 'cross', field: 'blue', cross: 'yellow', nordic: true } },
-  { name: 'Finland', grid: 'WBWBBBWBW', spec: { kind: 'cross', field: 'white', cross: 'blue', nordic: true } },
-  { name: 'Scotland', grid: 'WBWBWBWBW', spec: { kind: 'saltire', field: 'blue', cross: 'white' } },
-  { name: 'Brazil', grid: 'GYGYBYGYG', spec: { kind: 'brazil' } },
-  { name: 'Palau', grid: 'BBBBYBBBB', spec: { kind: 'disc', field: 'skyBlue', disc: 'yellow', offset: -0.05 } },
-]
-
 function FlagDemo() {
-  const [grid, setGrid] = useState<(CubeColor | null)[]>(() => [...'GWRGWRGWR'].map((l) => LETTER[l]!))
+  const [grid, setGrid] = useState<(CubeColor | null)[]>(() => [...getFlag('flag-italy')!.grid])
   const [cell, setCell] = useState<number | null>(4)
   return (
     <>
       <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
-        {FLAG_DEMOS.map((f) => (
-          <div key={f.name} className="flex flex-col gap-2">
+        {FLAGS.map((f) => (
+          <div key={f.id} className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-ink">{f.name}</p>
             <div className="flex items-center gap-3">
-              <FlagArt spec={f.spec} size={84} label={`Flag of ${f.name}`} />
+              <FlagArt spec={f.art} size={84} label={`Flag of ${f.name}`} />
               <Icon name="arrowRight" size={16} className="text-ink-muted" />
-              <FaceGrid colors={[...f.grid].map((l) => LETTER[l]!)} size={14} label={`${f.name} on the cube`} />
+              <FaceGrid colors={f.grid} size={14} label={`${f.name} on the cube`} />
             </div>
           </div>
         ))}

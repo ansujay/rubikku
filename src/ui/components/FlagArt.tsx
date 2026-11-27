@@ -1,28 +1,9 @@
 import { useId } from 'react'
 import { cx } from '../cx'
 
-import { FLAG_PALETTE, type FlagPaletteName } from '../flagPalette'
+import { FLAG_PALETTE, type FlagArtSpec, type FlagColor, type FlagPaletteName } from '../../cube'
 
-/** A palette name (preferred) or any CSS colour. */
-export type FlagColor = FlagPaletteName | (string & {})
-
-/**
- * What a flag looks like, declaratively. Flags are drawn 3:2 (30x20); `square` flags sit in the middle.
- *  - bands: stripes (`dir` 'h' = stacked, 'v' = side by side), optional `ratios`, plus a centred
- *    `disc` (Laos) or a `chakra` ring with spokes (India).
- *  - disc: plain field with a round disc; `offset` shifts it along the flag's width
- *    (negative = towards the hoist, e.g. Palau -0.05); `r` is the radius as a fraction of height.
- *  - cross: `nordic` puts the cross off-centre towards the hoist; `short` stops the arms short of
- *    the edge (Switzerland, with `square`).
- *  - saltire: diagonal cross (Scotland).
- *  - brazil: green field, yellow diamond, blue globe with its white band.
- */
-export type FlagArtSpec =
-  | { kind: 'bands'; dir: 'h' | 'v'; colors: FlagColor[]; ratios?: number[]; disc?: FlagColor; chakra?: FlagColor }
-  | { kind: 'disc'; field: FlagColor; disc: FlagColor; offset?: number; r?: number }
-  | { kind: 'cross'; field: FlagColor; cross: FlagColor; nordic?: boolean; short?: boolean; square?: boolean }
-  | { kind: 'saltire'; field: FlagColor; cross: FlagColor }
-  | { kind: 'brazil' }
+export type { FlagArtSpec, FlagColor }
 
 export interface FlagArtProps {
   spec: FlagArtSpec
