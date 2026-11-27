@@ -16,9 +16,10 @@ import {
   type CubePattern,
   type CubeState,
   type FaceGrid,
+  type FaceSolution,
   type Move,
 } from '../../cube'
-import { countPatterns } from '../../store'
+import { countPatterns, DESIGNED_FLAG_ID } from '../../store'
 
 /** The 24 ways of holding a cube that is in `state`. */
 export const orientationsOf = (state: CubeState): CubeState[] => CUBE_ROTATIONS.map((rotation) => applyAlg(state, rotation))
@@ -69,6 +70,8 @@ export type MakeableKind = 'trick' | 'flag' | 'design'
 export interface Makeable {
   /** Progress id: the pattern id, `flag-<name>`, or `flag-own` for a design. */
   id: string
+  /** Key for the saved "try it" / "real cube" place. Defaults to `id`; each design has its own. */
+  placeId?: string
   name: string
   description: string
   moves: readonly Move[]
@@ -156,4 +159,64 @@ export function collectionLine(item: Pick<Makeable, 'id' | 'kind'>, patterns: re
   if (item.kind === 'trick') return `${tricks} of ${PATTERNS.length} in your collection`
   if (item.kind === 'flag') return `${flags} of ${FLAGS.length} flags`
   return 'Your own flag, on your own cube'
+}
+
+// ───────────────────────── Your own design ─────────────────────────
+
+const LETTER_COLOR: Record<string, Color> = { W: 'white', Y: 'yellow', R: 'red', O: 'orange', B: 'blue', G: 'green' }
+
+/** A blank canvas: nine white stickers. */
+export const BLANK_FACE = 'WWWWWWWWW'
+
+/** A face as nine letters, row by row: "OOOWBWGGG". */
+export const faceCode = (grid: readonly Color[]): string => grid.map((c) => c[0].toUpperCase()).join('')
+
+/** The face for nine letters (any case), or null if it is not exactly nine of W Y R O B G. */
+export function parseFaceCode(text: string | null | undefined): FaceGrid | null {
+  if (typeof text !== 'string') return null
+  const letters = text.trim().toUpperCase()
+  if (!/^[WYROBG]{9}$/.test(letters)) return null
+  return [...letters].map((l) => LETTER_COLOR[l]) as unknown as FaceGrid
+}
+
+/** True when all nine stickers are one colour: that is just a face of a solved cube. */
+export const isPlainFace = (grid: readonly Color[]): boolean => grid.every((c) => c === grid[0])
+
+/** Where a design's "try it" place is saved: one per face and move set. */
+export const designPlaceId = (code: string, slices: boolean): string => `${DESIGNED_FLAG_ID}:${code}${slices ? '+s' : ''}`
+
+/** The player for a design: shareable and reloadable. */
+export const designLink = (code: string, slices: boolean): string => `/patterns/${DESIGNED_FLAG_ID}?face=${code}${slices ? '&slices=1' : ''}`
+
+/** The designer, opened on a face. */
+export const designerLink = (code: string, slices: boolean): string => `/patterns/design?face=${code}${slices ? '&slices=1' : ''}`
+
+/** Rough difficulty from the length: up to 3 moves easy, up to 6 medium, else tricky. */
+export const designDifficulty = (moves: number): 1 | 2 | 3 => (moves <= 3 ? 1 : moves <= 6 ? 2 : 3)
+
+/** "7 moves. Hold it with white on top and red facing you." */
+export function designResultLine(solution: FaceSolution): string {
+  const n = solution.moves.length
+  return `${n} ${n === 1 ? 'move' : 'moves'}. Hold it with ${holdWords(flagStart(solution.hold))}.`
+}
+
+/** The detail player's item for a face he painted, from the search's answer. */
+export function designMakeable(grid: FaceGrid, solution: FaceSolution, slices: boolean): Makeable {
+  const code = faceCode(grid)
+  const start = flagStart(solution.hold)
+  const moves = solution.moves
+  return {
+    id: DESIGNED_FLAG_ID,
+    placeId: designPlaceId(code, slices),
+    name: 'Your design',
+    description: 'Your own picture, worked out just for you. Hold a solved cube the way it says, then do the moves.',
+    moves,
+    difficulty: designDifficulty(moves.length),
+    kind: 'design',
+    start,
+    shows: (state) => faceShows(state, grid),
+    holdLine: holdWords(start),
+    grid,
+    back: { to: designerLink(code, slices), label: 'Back to the designer' },
+  }
 }

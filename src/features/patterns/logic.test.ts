@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FLAGS, PATTERNS, SOLVED, applyAlg, faceColors, isSolved, isUpright, randomScramble, seededRng } from '../../cube'
-import { collectedCount, collectionLine, filterPatterns, getMakeable, holdWords, makeableEnd, matchesInAnyOrientation, orientationsOf, patternState, showsPattern, undoMoves } from './logic'
+import { FLAGS, PATTERNS, SOLVED, applyAlg, faceColors, findFaceAlgs, getFlag, isSolved, isUpright, randomScramble, seededRng } from '../../cube'
+import { BLANK_FACE, collectedCount, collectionLine, designDifficulty, designerLink, designLink, designMakeable, designPlaceId, designResultLine, faceCode, filterPatterns, getMakeable, holdWords, isPlainFace, parseFaceCode, makeableEnd, matchesInAnyOrientation, orientationsOf, patternState, showsPattern, undoMoves } from './logic'
 
 describe('matching in any orientation', () => {
   it('finds a state however the cube is held', () => {
@@ -101,5 +101,55 @@ describe('makeables', () => {
     expect(collectionLine(getMakeable('flag-india')!, made)).toBe('2 of 21 flags')
     expect(collectionLine(getMakeable('flag-japan')!, made)).toBe('1 of 21 flags')
     expect(collectedCount(made, FLAGS)).toBe(1)
+  })
+})
+
+describe('your own design', () => {
+  const india = getFlag('flag-india')!
+
+  it('reads and writes faces as nine letters, in any case, and nothing else', () => {
+    expect(faceCode(india.grid)).toBe('OOOWBWGGG')
+    expect(parseFaceCode('oooWbwGGG')).toEqual([...india.grid])
+    for (const bad of [null, undefined, '', 'OOOWBWGG', 'OOOWBWGGGG', 'OOOWBWGGK', 'OOO WBW GGG']) expect(parseFaceCode(bad)).toBeNull()
+    expect(parseFaceCode(BLANK_FACE)!.every((c) => c === 'white')).toBe(true)
+  })
+
+  it('knows a plain face', () => {
+    expect(isPlainFace(parseFaceCode('RRRRRRRRR')!)).toBe(true)
+    expect(isPlainFace(india.grid)).toBe(false)
+  })
+
+  it('builds a makeable that ends on the design, from a rotated solved cube', () => {
+    const solution = findFaceAlgs(india.grid)[0]
+    const item = designMakeable(india.grid, solution, false)
+    expect(item).toMatchObject({ id: 'flag-own', kind: 'design', placeId: 'flag-own:OOOWBWGGG', name: 'Your design' })
+    expect(item.flag).toBeUndefined()
+    expect(isSolved(item.start)).toBe(true)
+    expect(faceColors(makeableEnd(item), 'F')).toEqual([...india.grid])
+    expect(item.shows(makeableEnd(item))).toBe(true)
+    expect(item.shows(item.start)).toBe(false)
+    expect(item.difficulty).toBe(designDifficulty(solution.moves.length))
+    expect(item.back.to).toBe('/patterns/design?face=OOOWBWGGG')
+    expect(designMakeable(india.grid, findFaceAlgs(india.grid, { slices: true })[0], true).placeId).toBe('flag-own:OOOWBWGGG+s')
+  })
+
+  it('links to the player and back to the designer, slices included', () => {
+    expect(designLink('OOOWBWGGG', false)).toBe('/patterns/flag-own?face=OOOWBWGGG')
+    expect(designLink('OOOWBWGGG', true)).toBe('/patterns/flag-own?face=OOOWBWGGG&slices=1')
+    expect(designerLink('OOOWBWGGG', true)).toBe('/patterns/design?face=OOOWBWGGG&slices=1')
+    expect(designPlaceId('OOOWBWGGG', true)).toBe('flag-own:OOOWBWGGG+s')
+  })
+
+  it('says how many moves and how to hold it', () => {
+    expect(designResultLine({ hold: [], moves: ['R', 'U'] })).toBe('2 moves. Hold it with white on top and green facing you.')
+    expect(designResultLine({ hold: ['x'], moves: ['M'] })).toBe('1 move. Hold it with green on top and yellow facing you.')
+    expect([1, 3, 4, 6, 7].map(designDifficulty)).toEqual([1, 1, 2, 2, 3])
+  })
+
+  it('a design is never a curated flag in the collection count', () => {
+    const design = designMakeable(india.grid, findFaceAlgs(india.grid)[0], false)
+    expect(collectionLine(design, ['flag-india'])).toBe('Your own flag, on your own cube')
+    expect(collectionLine(getMakeable('flag-india')!, ['flag-own'])).toBe(`1 of ${FLAGS.length} flags`)
+    expect(collectedCount(['flag-own', 'flag-india'], FLAGS)).toBe(1)
   })
 })

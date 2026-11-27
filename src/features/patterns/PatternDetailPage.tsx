@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { reward } from '../../app/rewards'
-import { applyAlg, describeMove, isSolved, type CubeState, type Move } from '../../cube'
-import { useProgress } from '../../store'
+import { applyAlg, describeMove, isFaceSearchCancelled, isSolved, peekFace, searchFace, type CubeState, type FaceSolution, type Move } from '../../cube'
+import { DESIGNED_FLAG_ID, useProgress } from '../../store'
 import { Cube3D, StageControls, useCubeController } from '../../three'
-import { Badge, Button, ButtonLink, Card, CubeStage, CubeSwatch, cx, EmptyState, FaceGrid, FlagArt, Icon, IconButton, Kbd, MoveChip, MoveSequence, Page, PlaybackBar, Reveal, SegmentedControl, sound, springs, Sticker, useCelebrations } from '../../ui'
+import { Badge, Button, ButtonLink, Card, CubeStage, CubeSwatch, cx, EmptyState, FaceGrid, FlagArt, Icon, IconButton, Kbd, MoveChip, MoveSequence, Page, PlaybackBar, Reveal, SegmentedControl, sound, springs, Spinner, Sticker, useCelebrations } from '../../ui'
 import { pretty } from '../notation/logic/explain'
 import { FOLLOW_START, acceptsMove, followMove, type FollowState } from '../notation/logic/follow'
-import { collectionLine, getMakeable, holdColors, makeableEnd, undoMoves, type Makeable } from './logic'
+import { collectionLine, designerLink, designMakeable, faceCode, getMakeable, holdColors, isPlainFace, makeableEnd, parseFaceCode, undoMoves, type Makeable } from './logic'
 import { Difficulty } from './PatternsPage'
 import { usePatterns } from './patternsStore'
 
@@ -19,6 +19,7 @@ const FLAG_POSE = { azimuth: 0.35, elevation: 0.3 }
 
 export default function PatternDetailPage() {
   const { id = '' } = useParams()
+  if (id === DESIGNED_FLAG_ID) return <DesignDetail />
   const item = getMakeable(id)
   if (!item) {
     return (
@@ -28,6 +29,84 @@ export default function PatternDetailPage() {
     )
   }
   return <MakeableDetail key={item.id} item={item} />
+}
+
+/**
+ * A face he painted on the designer: `/patterns/flag-own?face=OOOWBWGGG[&slices=1]`. The moves
+ * are worked out again in the background (the same answer every time, and instant when the
+ * designer has just found them), so the link can be shared and reloaded.
+ */
+function DesignDetail() {
+  const [params] = useSearchParams()
+  const grid = useMemo(() => parseFaceCode(params.get('face')), [params])
+  const slices = params.get('slices') === '1'
+  const code = grid ? faceCode(grid) : ''
+  const [found, setFound] = useState<{ key: string; solution: FaceSolution | null; failed?: boolean } | null>(null)
+  const key = `${code}${slices ? '+s' : ''}`
+  const cached = grid ? peekFace(grid, { slices }) : undefined
+  const result = found?.key === key ? found : cached !== undefined ? { key, solution: cached } : null
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!grid || isPlainFace(grid) || peekFace(grid, { slices }) !== undefined) return
+    let live = true
+    searchFace(grid, { slices }).then(
+      (solution) => live && setFound({ key, solution }),
+      (error: unknown) => live && !isFaceSearchCancelled(error) && setFound({ key, solution: null, failed: true }),
+    )
+    return () => {
+      live = false
+    }
+  }, [grid, slices, key, attempt])
+
+  const solution = result?.solution ?? null
+  const item = useMemo(() => (grid && solution ? designMakeable(grid, solution, slices) : null), [grid, solution, slices])
+
+  if (!grid || isPlainFace(grid)) {
+    return (
+      <Page width="narrow">
+        <EmptyState
+          headingLevel="h1"
+          icon="flag"
+          tone="white"
+          title={grid ? 'That is a plain face' : 'Paint a design first'}
+          description={grid ? 'A solved cube already shows it. Paint a few stickers a new colour and there will be moves to make.' : 'Pick colours, tap stickers, and the moves to make it appear on their own.'}
+          action={<ButtonLink to={grid ? designerLink(code, slices) : '/patterns/design'}>Open the designer</ButtonLink>}
+        />
+      </Page>
+    )
+  }
+  if (result && (result.failed || !result.solution)) {
+    return (
+      <Page width="narrow">
+        <EmptyState
+          headingLevel="h1"
+          icon="flag"
+          tone="white"
+          title="The moves did not load"
+          description="Something went wrong while working them out. Have another go."
+          action={
+            <Button iconLeft="restart" onClick={() => { setFound(null); setAttempt((n) => n + 1) }}>
+              Try again
+            </Button>
+          }
+        />
+      </Page>
+    )
+  }
+  if (!item) {
+    return (
+      <Page width="narrow">
+        <div className="flex min-h-64 flex-col items-center justify-center gap-4 text-center" role="status" data-testid="design-loading">
+          <FaceGrid colors={grid} size={28} label="Your design" />
+          <p className="flex items-center gap-2 text-base font-semibold text-ink-muted">
+            <Spinner /> Working out the moves…
+          </p>
+        </div>
+      </Page>
+    )
+  }
+  return <MakeableDetail key={item.placeId} item={item} />
 }
 
 /** "Hold it like this": the two centre colours that say how to pick up the solved cube. */
@@ -85,12 +164,18 @@ export function MakeableDetail({ item }: { item: Makeable }) {
 
   const moves = item.moves
   const start = item.start
+  // Where "try it" and "real cube" remember his place: each design has its own.
+  const placeId = item.placeId ?? item.id
+  const isDesign = item.kind === 'design'
   const target = useMemo(() => makeableEnd(item), [item])
   const undo = useMemo(() => undoMoves(item), [item])
   const noun = item.kind === 'trick' ? 'pattern' : 'flag'
   // Tricks all start the standard way; anything else says how to pick the cube up first.
   const holdFirst = item.kind !== 'trick'
-  const owned = useProgress((s) => s.patterns.includes(item.id))
+  const ownedEver = useProgress((s) => s.patterns.includes(item.id))
+  // Every design shares one progress id, so "made" for a design means made on this visit.
+  const [madeHere, setMadeHere] = useState(false)
+  const owned = isDesign ? madeHere : ownedEver
   // While the "Pattern made" card is up it says so; the header's "Collected" joins after it
   // leaves, so one achievement is not four "done" signals at once (design review 2, P-a).
   const celebrating = useCelebrations((s) => s.current !== null)
@@ -128,29 +213,30 @@ export function MakeableDetail({ item }: { item: Makeable }) {
     setNudge(false)
     setUndoing(false)
     if (mode === 'try') {
-      const at = Math.min(usePatterns.getState().tryAt[item.id] ?? 0, moves.length)
+      const at = Math.min(usePatterns.getState().tryAt[placeId] ?? 0, moves.length)
       controller.reset(applyAlg(start, moves.slice(0, at)))
       setFollow({ index: at, partial: null })
     } else {
       controller.load(moves, { from: start, autoplay: false })
-      if (mode === 'follow') controller.seek(usePatterns.getState().followAt[item.id] ?? 0)
+      if (mode === 'follow') controller.seek(usePatterns.getState().followAt[placeId] ?? 0)
       setFollow(FOLLOW_START)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, item.id])
 
   const celebrate = () => {
-    if (!useProgress.getState().patterns.includes(item.id)) {
+    if (isDesign ? !madeHere : !useProgress.getState().patterns.includes(item.id)) {
       sawCard.current = false
       setHoldCollected(true)
     }
+    setMadeHere(true)
     setJustMade(true)
     window.setTimeout(() => setJustMade(false), 2600)
     window.setTimeout(() => {
       // A stage moment: the cube spins, the card lands (with the XP and any badge it earned).
       const made = useProgress.getState().patterns
       const already = made.includes(item.id)
-      const eyebrow = already ? 'Made it again' : item.kind === 'trick' ? 'Pattern made' : 'Flag made'
+      const eyebrow = isDesign ? 'Design made' : already ? 'Made it again' : item.kind === 'trick' ? 'Pattern made' : 'Flag made'
       reward('pattern-made', { patternId: item.id }, { moment: { eyebrow, title: item.name, subtitle: collectionLine(item, made), icon: item.kind === 'trick' ? 'grid' : 'flag' } })
     }, 240)
   }
@@ -163,7 +249,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
     if (result.status === 'wrong') return
     setNudge(false)
     setFollow(result.next)
-    usePatterns.getState().setTryAt(item.id, result.next.index)
+    usePatterns.getState().setTryAt(placeId, result.next.index)
     // The real test: does the cube show it, however it is held?
     if (item.shows(state)) celebrate()
   }
@@ -181,7 +267,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
     controller.reset(start)
     setFollow(FOLLOW_START)
     setNudge(false)
-    usePatterns.getState().setTryAt(item.id, 0)
+    usePatterns.getState().setTryAt(placeId, 0)
   }
 
   // ── undo: the same moves backwards ──
@@ -192,7 +278,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
     controller.load(undo, { from: target, autoplay: true, speed: 1 })
     if (mode === 'try') {
       setFollow(FOLLOW_START)
-      usePatterns.getState().setTryAt(item.id, 0)
+      usePatterns.getState().setTryAt(placeId, 0)
     }
   }
 
@@ -217,7 +303,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
 
   const followPos = mode === 'follow' && player ? player.position : 0
   useEffect(() => {
-    if (mode === 'follow' && player) usePatterns.getState().setFollowAt(item.id, player.position)
+    if (mode === 'follow' && player) usePatterns.getState().setFollowAt(placeId, player.position)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, followPos])
 
@@ -317,7 +403,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
           <motion.span key={collected ? 'yes' : 'no'} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={springs.bouncy}>
             {collected ? (
               <Badge tone="green" variant="solid" icon="check" size="md" data-testid="collected-badge">
-                Collected
+                {isDesign ? 'Made it' : 'Collected'}
               </Badge>
             ) : (
               <Badge tone="neutral" size="md" data-testid="collected-badge">

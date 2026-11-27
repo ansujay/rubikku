@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { FLAGS, FLAG_FAMILIES, LEFT_OUT_FLAGS, PATTERNS, SOLVED, countMoves, type CubeFlag, type CubePattern } from '../../cube'
 import { useProgress } from '../../store'
 import { MiniCube } from '../../three'
 import { Badge, Chip, cx, EmptyState, FaceGrid, FlagArt, Icon, Page, PageHeader, ProgressBar, Reveal, springs, Sticker, TabPanel, Tabs } from '../../ui'
+import DesignStudio from './DesignPage'
 import { collectedCount, DIFFICULTY_LABEL, filterPatterns, type GalleryFilter } from './logic'
 
 const canHover = () => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches
@@ -65,7 +66,7 @@ function PatternCard({ pattern, made, hover, index }: { pattern: CubePattern; ma
   )
 }
 
-type GalleryTab = 'tricks' | 'flags'
+type GalleryTab = 'tricks' | 'flags' | 'design'
 const TAB_ID = 'patterns'
 
 function FlagCard({ flag, made, index }: { flag: CubeFlag; made: boolean; index: number }) {
@@ -258,8 +259,21 @@ function FlagsTab({ made }: { made: readonly string[] }) {
 export default function PatternsPage() {
   const made = useProgress((s) => s.patterns)
   const [params, setParams] = useSearchParams()
-  const tab: GalleryTab = params.get('tab') === 'flags' ? 'flags' : 'tricks'
+  const navigate = useNavigate()
+  // "Make your own" has its own address (/patterns/design, with the face in the search) so a
+  // design can be shared; the other two are `?tab=` on /patterns.
+  const designing = useMatch('/patterns/design') !== null
+  const tab: GalleryTab = designing ? 'design' : params.get('tab') === 'flags' ? 'flags' : 'tricks'
   const setTab = (next: GalleryTab) => {
+    if (next === tab) return
+    if (next === 'design') {
+      navigate('/patterns/design', { replace: true })
+      return
+    }
+    if (designing) {
+      navigate(next === 'flags' ? '/patterns?tab=flags' : '/patterns', { replace: true })
+      return
+    }
     const updated = new URLSearchParams(params)
     if (next === 'tricks') updated.delete('tab')
     else updated.set('tab', next)
@@ -268,7 +282,7 @@ export default function PatternsPage() {
 
   return (
     <Page>
-      <PageHeader title="Patterns" lede="Tricks and flags you can make on a solved cube. Make one and it joins your collection." className="mb-4! md:mb-5!" />
+      <PageHeader title="Patterns" lede={designing ? 'Paint any face you like. The moves to make it on a real cube appear by themselves.' : 'Tricks and flags you can make on a solved cube. Make one and it joins your collection.'} className="mb-4! md:mb-5!" />
 
       <Reveal className="mb-5">
         <Tabs
@@ -279,12 +293,13 @@ export default function PatternsPage() {
           items={[
             { value: 'tricks', label: 'Tricks', icon: 'grid' },
             { value: 'flags', label: 'Flags', icon: 'flag' },
+            { value: 'design', label: 'Make your own', icon: 'wand' },
           ]}
         />
       </Reveal>
 
       <TabPanel idBase={TAB_ID} value={tab} className="rounded-lg">
-        {tab === 'tricks' ? <TricksTab made={made} /> : <FlagsTab made={made} />}
+        {tab === 'tricks' ? <TricksTab made={made} /> : tab === 'flags' ? <FlagsTab made={made} /> : <DesignStudio />}
       </TabPanel>
     </Page>
   )

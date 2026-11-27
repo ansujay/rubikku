@@ -46,6 +46,8 @@ const APP_ROUTES: readonly AppRoute[] = [
   { path: '/timer', title: 'Timer', page: TimerPage, element: <TimerPage /> },
   { path: '/progress', title: 'Progress', page: ProgressPage, element: <ProgressPage /> },
   { path: '/patterns', title: 'Patterns', page: PatternsPage, element: <PatternsPage /> },
+  // Before /patterns/:id, so "design" is never read as a pattern id.
+  { path: '/patterns/design', title: 'Make your own', page: PatternsPage, element: <PatternsPage /> },
   { path: '/patterns/:id', title: 'Pattern', page: PatternDetailPage, element: <PatternDetailPage /> },
   { path: '/settings', title: 'Settings', page: SettingsPage, element: <SettingsPage /> },
   { path: '/kitchen-sink', title: 'Kitchen sink', page: KitchenSinkPage, element: <KitchenSinkPage />, internal: true },
