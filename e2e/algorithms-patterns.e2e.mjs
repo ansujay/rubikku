@@ -10,6 +10,7 @@
  * Covers: the gallery (filter, search, deep links), stepping through an algorithm, a practice
  * rep with a refused wrong move and a double turn, mastery shown on the cards, the flash cards,
  * making a pattern, the collected state, undoing it, follow-along, persistence across reloads,
+ * the mode bar staying put when switching modes,
  * the flags tab (making Nigeria, India's rotated start and hold), the "make your own" designer,
  * and no console errors.
  */
@@ -312,6 +313,29 @@ const tests = {
     check((await saved(page, 'progress')).patterns.includes('six-spots'), 'saying "I made it" on the real cube collects it')
     equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
     await context.close()
+  },
+
+  // ── the mode bar stays put: switching modes changes what is under it, never where it is ──
+  async 'mode-bar'() {
+    const pages = [
+      ['/patterns/six-spots', ['Watch', 'Try it', 'Real cube']],
+      ['/algorithms/sune', ['Watch', 'Practise']],
+    ]
+    for (const [route, modes] of pages) {
+      const { page, context, errors } = await open(route)
+      for (const [width, height] of [[390, 844], [820, 1180], [1024, 768], [1366, 768]]) {
+        await page.setViewportSize({ width, height })
+        const ys = []
+        for (const name of [...modes, modes[0]]) {
+          await page.getByRole('radio', { name }).click()
+          await page.waitForTimeout(300)
+          ys.push(Math.round((await page.locator('[role=radiogroup][aria-label=Mode]').boundingBox()).y))
+        }
+        check(ys.every((y) => y === ys[0]), `${route} at ${width}x${height}: the mode bar stays put when switching modes (${ys.join(', ')})`)
+      }
+      equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
+      await context.close()
+    }
   },
 
   // ── flags: the tab, the 21 cards, making Nigeria, counts ──
