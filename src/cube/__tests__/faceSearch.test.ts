@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findFaceAlgs, faceShows, flagStart, type FaceGrid, type FaceSolution } from '../faceSearch'
+import { findFaceAlgs, faceSearchTablesBuilt, faceShows, flagStart, tableKey, type FaceGrid, type FaceSolution } from '../faceSearch'
 import { COLORS, type Color } from '../geometry'
 import { applyAlg, CUBE_ROTATIONS } from '../moves'
 import { invertAlg, moveKind } from '../notation'
@@ -97,6 +97,37 @@ describe('findFaceAlgs: random pictures', () => {
       expect(solutions[0].moves.length).toBeLessThanOrEqual(findFaceAlgs(g, { limit: 1 })[0].moves.length)
     },
   )
+})
+
+describe('findFaceAlgs: distance tables', () => {
+  it('keys each table by its own four colours, and the centre only with slices', () => {
+    const a = grid('OOO WBW GGG')
+    const centre = grid('OOO WRW GGG')
+    const corner = grid('ROO WBW GGG')
+    expect(tableKey('edge', a, false)).toBe(tableKey('edge', centre, false))
+    expect(tableKey('corner', a, false)).toBe(tableKey('corner', centre, false))
+    expect(tableKey('edge', a, true)).not.toBe(tableKey('edge', centre, true))
+    expect(tableKey('edge', a, true)).toBe(tableKey('edge', corner, true))
+    expect(tableKey('corner', a, true)).not.toBe(tableKey('corner', corner, true))
+    expect(tableKey('edge', a, true)).not.toBe(tableKey('edge', a, false))
+  })
+
+  it('painting one sticker rebuilds only the table it belongs to', () => {
+    const run = (text: string, slices: boolean) => {
+      const before = faceSearchTablesBuilt()
+      const g = grid(text)
+      expectAllReproduce(g, findFaceAlgs(g, { slices, limit: 4 }), slices)
+      return faceSearchTablesBuilt() - before
+    }
+    run('YOO WBW GGG', false)
+    expect(run('YOO WBW GGR', false)).toBe(1) // a corner: the edge table is reused
+    expect(run('YOO WBY GGR', false)).toBe(1) // an edge: the corner table is reused
+    expect(run('YOO WRY GGR', false)).toBe(0) // the centre: irrelevant to face turns
+    expect(run('YOO WBY GGR', false)).toBe(0) // back again: both cached
+    run('YOO WBW GGG', true)
+    expect(run('YOO WBW GGR', true)).toBe(1)
+    expect(run('YOO WRW GGR', true)).toBe(2) // with slices the centre is in both
+  }, 20_000)
 })
 
 describe('faceShows and flagStart', () => {

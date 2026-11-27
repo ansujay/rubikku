@@ -188,8 +188,24 @@ export const designPlaceId = (code: string, slices: boolean): string => `${DESIG
 /** The player for a design: shareable and reloadable. */
 export const designLink = (code: string, slices: boolean): string => `/patterns/${DESIGNED_FLAG_ID}?face=${code}${slices ? '&slices=1' : ''}`
 
-/** The designer, opened on a face. */
-export const designerLink = (code: string, slices: boolean): string => `/patterns/design?face=${code}${slices ? '&slices=1' : ''}`
+/** The designer: the "Make your own" tab of /patterns, opened on a face. */
+export const designerLink = (code: string, slices: boolean): string => `/patterns?tab=design&face=${code}${slices ? '&slices=1' : ''}`
+
+/** A face code turned a quarter turn clockwise: new (r, c) = old (2 - c, r). */
+const quarterTurn = (code: string): string => [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => code[(2 - (i % 3)) * 3 + Math.floor(i / 3)]).join('')
+
+/**
+ * The flag this design shows, held upright or turned any quarter turn (turning the cube turns
+ * the picture, and the flag pages accept it that way too). An upright match wins.
+ */
+export function flagLookingLike(grid: readonly Color[]): CubeFlag | undefined {
+  const code = faceCode(grid)
+  const exact = FLAGS.find((flag) => faceCode(flag.grid) === code)
+  if (exact) return exact
+  const turned = [quarterTurn(code)]
+  for (let k = 1; k < 3; k++) turned.push(quarterTurn(turned[k - 1]))
+  return FLAGS.find((flag) => turned.includes(faceCode(flag.grid)))
+}
 
 /** Rough difficulty from the length: up to 3 moves easy, up to 6 medium, else tricky. */
 export const designDifficulty = (moves: number): 1 | 2 | 3 => (moves <= 3 ? 1 : moves <= 6 ? 2 : 3)

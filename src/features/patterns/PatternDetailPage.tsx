@@ -71,7 +71,7 @@ function DesignDetail() {
           tone="white"
           title={grid ? 'That is a plain face' : 'Paint a design first'}
           description={grid ? 'A solved cube already shows it. Paint a few stickers a new colour and there will be moves to make.' : 'Pick colours, tap stickers, and the moves to make it appear on their own.'}
-          action={<ButtonLink to={grid ? designerLink(code, slices) : '/patterns/design'}>Open the designer</ButtonLink>}
+          action={<ButtonLink to={grid ? designerLink(code, slices) : '/patterns?tab=design'}>Open the designer</ButtonLink>}
         />
       </Page>
     )

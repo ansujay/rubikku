@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useMatch, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { FLAGS, FLAG_FAMILIES, LEFT_OUT_FLAGS, PATTERNS, SOLVED, countMoves, type CubeFlag, type CubePattern } from '../../cube'
 import { useProgress } from '../../store'
@@ -86,7 +86,10 @@ function FlagCard({ flag, made, index }: { flag: CubeFlag; made: boolean; index:
         <div className="flex items-center gap-2 border-b border-line bg-inset px-3.5 py-4 sm:gap-3 sm:px-5 sm:py-5">
           <FlagArt spec={flag.art} label={`Flag of ${flag.name}`} className="min-w-0 flex-[3] transition-[rotate,scale] duration-300 ease-out group-hover:-rotate-2 group-hover:scale-105" />
           <Icon name="arrowRight" size={16} weight={2.4} className="shrink-0 text-ink-faint" />
-          <FaceGrid colors={flag.grid} label={`${flag.name} on the cube`} className="min-w-0 flex-[2]" />
+          {/* A picture of the stickers: hidden so the link's name stays "Flag of …, name, moves". */}
+          <div aria-hidden="true" className="min-w-0 flex-[2]">
+            <FaceGrid colors={flag.grid} label={`${flag.name} on the cube`} />
+          </div>
         </div>
         <div className="flex grow flex-col gap-1.5 p-4">
           <h3 className="flex items-center justify-between gap-2 text-lg leading-6 text-ink">
@@ -259,24 +262,21 @@ function FlagsTab({ made }: { made: readonly string[] }) {
 export default function PatternsPage() {
   const made = useProgress((s) => s.patterns)
   const [params, setParams] = useSearchParams()
-  const navigate = useNavigate()
-  // "Make your own" has its own address (/patterns/design, with the face in the search) so a
-  // design can be shared; the other two are `?tab=` on /patterns.
-  const designing = useMatch('/patterns/design') !== null
-  const tab: GalleryTab = designing ? 'design' : params.get('tab') === 'flags' ? 'flags' : 'tricks'
+  // All three tabs are `?tab=` on /patterns, so switching never leaves the page (focus stays on
+  // the tab). The designer keeps its face in the search too (`&face=…[&slices=1]`), so a design
+  // can be shared; /patterns/design is an old alias that redirects here.
+  const raw = params.get('tab')
+  const tab: GalleryTab = raw === 'flags' || raw === 'design' ? raw : 'tricks'
+  const designing = tab === 'design'
   const setTab = (next: GalleryTab) => {
     if (next === tab) return
-    if (next === 'design') {
-      navigate('/patterns/design', { replace: true })
-      return
-    }
-    if (designing) {
-      navigate(next === 'flags' ? '/patterns?tab=flags' : '/patterns', { replace: true })
-      return
-    }
     const updated = new URLSearchParams(params)
     if (next === 'tricks') updated.delete('tab')
     else updated.set('tab', next)
+    if (next !== 'design') {
+      updated.delete('face')
+      updated.delete('slices')
+    }
     setParams(updated, { replace: true })
   }
 

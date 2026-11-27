@@ -117,6 +117,20 @@ describe('createFaceSearchClient with a custom transport', () => {
     expect(fake.sent).toHaveLength(2)
   })
 
+  it('does not keep "nothing found", so asking again searches again', async () => {
+    const fake = fakeTransport()
+    const client = createFaceSearchClient({ createTransport: () => fake.transport })
+    const p = client.search(JAPAN)
+    fake.respond({ id: 1, ok: true, solution: null })
+    expect(await p).toBeNull()
+    expect(client.peek(JAPAN)).toBeUndefined()
+    const again = client.search(JAPAN)
+    expect(fake.sent).toHaveLength(2)
+    fake.respond({ id: 2, ok: true, solution: answer(['R']) })
+    expect(await again).toEqual(answer(['R']))
+    expect(client.peek(JAPAN)).toEqual(answer(['R']))
+  })
+
   it('forgets the oldest answers past its cache size', async () => {
     const fake = fakeTransport()
     const client = createFaceSearchClient({ createTransport: () => fake.transport, cacheSize: 1 })

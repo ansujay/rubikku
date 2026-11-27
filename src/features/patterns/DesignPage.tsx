@@ -8,7 +8,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { FLAGS, flagStart, isFaceSearchCancelled, peekFace, searchFace, type Color, type FaceGrid, type FaceSolution } from '../../cube'
 import { Button, ButtonLink, Card, CUBE_COLOR_NAME, CubeSwatch, cx, FaceGrid as FaceGridView, FlagArt, Icon, Modal, MoveSequence, Spinner, sound, springs, Sticker, Toggle } from '../../ui'
-import { BLANK_FACE, designLink, designResultLine, faceCode, holdColors, isPlainFace, parseFaceCode } from './logic'
+import { BLANK_FACE, designLink, designResultLine, faceCode, flagLookingLike, holdColors, isPlainFace, parseFaceCode } from './logic'
 import { usePatterns } from './patternsStore'
 
 /** The palette, in the order a kid reads a cube: the two neutrals, then the four bright ones. */
@@ -61,7 +61,7 @@ function PresetPicker({ open, onClose, onPick }: { open: boolean; onClose: () =>
   )
 }
 
-/** The "Make your own" tab of the patterns page (route `/patterns/design`). */
+/** The "Make your own" tab of the patterns page (`/patterns?tab=design&face=…`). */
 export default function DesignStudio() {
   const design = usePatterns((s) => s.design)
   const setDesign = usePatterns((s) => s.setDesign)
@@ -132,7 +132,7 @@ export default function DesignStudio() {
   const shown = plain ? null : (current ?? found)
   const solution = shown?.solution ?? null
   const failed = current?.failed === true || (current !== null && !current.solution)
-  const looksLike = FLAGS.find((flag) => faceCode(flag.grid) === code)
+  const looksLike = useMemo(() => flagLookingLike(grid), [grid])
 
   const paintCell = (index: number) => {
     if (grid[index] === paint) return
@@ -203,7 +203,16 @@ export default function DesignStudio() {
           ) : failed && !thinking ? (
             <div className="flex flex-col items-start gap-3">
               <p className="text-base text-ink-muted">Something went wrong working that one out.</p>
-              <Button variant="secondary" size="sm" iconLeft="restart" onClick={() => setAttempt((n) => n + 1)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft="restart"
+                onClick={() => {
+                  // Drop the failure so the spinner shows while it tries again.
+                  setFound(null)
+                  setAttempt((n) => n + 1)
+                }}
+              >
                 Try again
               </Button>
             </div>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FLAGS, PATTERNS, SOLVED, applyAlg, faceColors, findFaceAlgs, getFlag, isSolved, isUpright, randomScramble, seededRng } from '../../cube'
-import { BLANK_FACE, collectedCount, collectionLine, designDifficulty, designerLink, designLink, designMakeable, designPlaceId, designResultLine, faceCode, filterPatterns, getMakeable, holdWords, isPlainFace, parseFaceCode, makeableEnd, matchesInAnyOrientation, orientationsOf, patternState, showsPattern, undoMoves } from './logic'
+import { BLANK_FACE, collectedCount, collectionLine, designDifficulty, designerLink, designLink, designMakeable, designPlaceId, designResultLine, faceCode, filterPatterns, flagLookingLike, getMakeable, holdWords, isPlainFace, parseFaceCode, makeableEnd, matchesInAnyOrientation, orientationsOf, patternState, showsPattern, undoMoves } from './logic'
 
 describe('matching in any orientation', () => {
   it('finds a state however the cube is held', () => {
@@ -129,15 +129,37 @@ describe('your own design', () => {
     expect(item.shows(makeableEnd(item))).toBe(true)
     expect(item.shows(item.start)).toBe(false)
     expect(item.difficulty).toBe(designDifficulty(solution.moves.length))
-    expect(item.back.to).toBe('/patterns/design?face=OOOWBWGGG')
+    expect(item.back.to).toBe('/patterns?tab=design&face=OOOWBWGGG')
     expect(designMakeable(india.grid, findFaceAlgs(india.grid, { slices: true })[0], true).placeId).toBe('flag-own:OOOWBWGGG+s')
   })
 
   it('links to the player and back to the designer, slices included', () => {
     expect(designLink('OOOWBWGGG', false)).toBe('/patterns/flag-own?face=OOOWBWGGG')
     expect(designLink('OOOWBWGGG', true)).toBe('/patterns/flag-own?face=OOOWBWGGG&slices=1')
-    expect(designerLink('OOOWBWGGG', true)).toBe('/patterns/design?face=OOOWBWGGG&slices=1')
+    expect(designerLink('OOOWBWGGG', true)).toBe('/patterns?tab=design&face=OOOWBWGGG&slices=1')
     expect(designPlaceId('OOOWBWGGG', true)).toBe('flag-own:OOOWBWGGG+s')
+  })
+
+  it('names the flag a design shows, upright or turned', () => {
+    const nigeria = getFlag('flag-nigeria')!
+    expect(flagLookingLike(nigeria.grid)).toBe(nigeria)
+    // Nigeria's green-white-green stripes turned on their side.
+    expect(flagLookingLike(parseFaceCode('GGGWWWGGG')!)).toBe(nigeria)
+    // India upside down is still India.
+    expect(flagLookingLike(parseFaceCode('GGGWBWOOO')!)?.id).toBe('flag-india')
+    expect(flagLookingLike(parseFaceCode('BWRBWRBWR')!)?.id).toBe('flag-france')
+    expect(flagLookingLike(parseFaceCode('BBBWWWRRR')!)?.id).toBe('flag-france')
+    expect(flagLookingLike(parseFaceCode('RWYOBGWWW')!)).toBeUndefined()
+    // Every flag, every quarter turn: some flag that is truly that picture turned.
+    for (const flag of FLAGS) {
+      const turns = [faceCode(flag.grid)]
+      for (let k = 1; k < 4; k++) turns.push([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => turns[k - 1][(2 - (i % 3)) * 3 + Math.floor(i / 3)]).join(''))
+      for (const code of turns) {
+        const found = flagLookingLike(parseFaceCode(code)!)
+        expect(found, code).toBeDefined()
+        if (code === turns[0]) expect(found).toBe(flag)
+      }
+    }
   })
 
   it('says how many moves and how to hold it', () => {

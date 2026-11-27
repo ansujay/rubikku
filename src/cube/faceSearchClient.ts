@@ -1,16 +1,21 @@
 /**
  * Asynchronous one-face search for the "Make your own" designer.
  *
- * The search itself (`faceSearch.ts`) is synchronous: ~0.1 s with face turns, up to ~1 s with
- * the middle slices, mostly building tables. In the browser it runs in its own Web Worker so
- * painting never stutters; in Node (tests) it runs in-process behind the same promise API.
- * Importing this file is cheap — the search code is only loaded by the worker.
+ * The search itself (`faceSearch.ts`) is synchronous: well under 0.1 s with face turns, up to
+ * ~0.7 s with the middle slices, mostly building tables. In the browser it runs in its own Web
+ * Worker so painting never stutters; in Node (tests) it runs in-process behind the same promise
+ * API. This file only imports types from the search; the main bundle has the search module
+ * anyway (the cube index re-exports `faceShows` and `flagStart` from it), but the main thread
+ * never runs a search.
  *
  * Latest wins. A designer fires a search after every paint stroke, so only the newest request
  * matters: asking again cancels every older promise (it rejects with `FaceSearchCancelled`).
  * At most one request is with the worker at a time and at most one waits behind it, so a burst
- * of edits never builds a queue of stale searches. Answers are cached, so going back to a
- * design (or from the designer to its player) is instant.
+ * of edits never builds a queue of stale searches. A stale search still in the worker is left to
+ * finish rather than the worker being killed: the distance tables it builds stay cached there and
+ * are usually what the next search needs (a one-sticker change keeps one of its two tables).
+ * Answers are cached, so going back to a design (or from the designer to its player) is instant;
+ * "nothing found" is not cached, so asking again really searches again.
  */
 import type { FaceGrid, FaceSolution } from './faceSearch'
 import type { FaceSearchRequest, FaceSearchResponse, FaceSearchTransport } from './faceSearchProtocol'
@@ -27,8 +32,8 @@ export interface FaceSearchClient {
    * search replaces it.
    */
   search(grid: FaceGrid, query?: FaceSearchQuery): Promise<FaceSolution | null>
-  /** A cached answer, or undefined if this face has not been searched yet. */
-  peek(grid: FaceGrid, query?: FaceSearchQuery): FaceSolution | null | undefined
+  /** A cached answer, or undefined if this face has no answer yet ("nothing found" is not kept). */
+  peek(grid: FaceGrid, query?: FaceSearchQuery): FaceSolution | undefined
   /** Stop the worker and cancel anything pending. It restarts on next use. */
   dispose(): void
 }
@@ -106,7 +111,7 @@ interface Waiter {
 export function createFaceSearchClient(options: FaceSearchClientOptions = {}): FaceSearchClient {
   const createTransport = options.createTransport ?? defaultTransport
   const cacheSize = options.cacheSize ?? 32
-  const cache = new Map<string, FaceSolution | null>()
+  const cache = new Map<string, FaceSolution>()
   let transport: FaceSearchTransport | null = null
   let nextId = 1
   /** The request the worker is busy with. Its waiter is null once a newer search replaced it. */
@@ -114,7 +119,7 @@ export function createFaceSearchClient(options: FaceSearchClientOptions = {}): F
   /** The newest request, waiting for the worker to be free. */
   let queued: { key: string; grid: FaceGrid; slices: boolean; waiter: Waiter } | null = null
 
-  const remember = (key: string, solution: FaceSolution | null) => {
+  const remember = (key: string, solution: FaceSolution) => {
     cache.delete(key)
     cache.set(key, solution)
     if (cache.size > cacheSize) cache.delete(cache.keys().next().value!)
@@ -142,7 +147,7 @@ export function createFaceSearchClient(options: FaceSearchClientOptions = {}): F
       const { key, waiter } = inflight
       inflight = null
       if (response.ok) {
-        remember(key, response.solution)
+        if (response.solution) remember(key, response.solution)
         waiter?.resolve(response.solution)
       } else {
         waiter?.reject(new Error(response.error))
@@ -228,7 +233,7 @@ export function searchFace(grid: FaceGrid, query?: FaceSearchQuery): Promise<Fac
 }
 
 /** The shared worker's cached answer for this face, if it has one. */
-export function peekFace(grid: FaceGrid, query?: FaceSearchQuery): FaceSolution | null | undefined {
+export function peekFace(grid: FaceGrid, query?: FaceSearchQuery): FaceSolution | undefined {
   return shared?.peek(grid, query)
 }
 

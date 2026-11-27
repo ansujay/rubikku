@@ -126,7 +126,7 @@ const SHOTS = [
   { name: 'pattern-detail', route: '/patterns/checkerboard' },
   { name: 'patterns-flags', route: '/patterns?tab=flags' },
   { name: 'flag-detail', route: '/patterns/flag-india' },
-  { name: 'pattern-design', route: '/patterns/design?face=OOOWBWGGG' },
+  { name: 'pattern-design', route: '/patterns?tab=design&face=OOOWBWGGG' },
   { name: 'settings', route: '/settings' },
   { name: 'kitchen-sink', route: '/kitchen-sink' },
   { name: 'not-found', route: '/nope' },

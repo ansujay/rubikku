@@ -13,8 +13,9 @@
  * distance tables per picture (four edge stickers + centre, four corner stickers + centre) serve
  * all 24 holds as an IDA* heuristic.
  *
- * Pure and synchronous. Face turns only: ~0.1–0.3 s per picture; with middle slices ~1–2 s,
- * mostly building the tables (cached for the last few pictures).
+ * Pure and synchronous. Face turns only: well under 0.1 s per picture; with middle slices
+ * ~0.7 s, mostly building the two tables. Each table is cached on its own four colours, so a
+ * one-sticker change rebuilds only one of them (or neither, for a centre with face turns).
  */
 import { COLORS, FACE_COLOR, FACELETS, FACES, type Color } from './geometry'
 import { algPermutation, applyAlg, CUBE_ROTATIONS, movePermutation, rotateAlg } from './moves'
@@ -191,11 +192,27 @@ function buildTable(
   return table
 }
 
-const TABLE_CACHE = new Map<string, Tables>()
-const TABLE_CACHE_SIZE = 4
+/**
+ * Built tables, most recently used last. The edge and the corner table are cached apart, each
+ * keyed by its own four colours (plus the centre, which only matters when slices move it), so
+ * painting a corner sticker reuses the edge table and the other way round.
+ */
+const TABLE_CACHE = new Map<string, Int8Array>()
+/** Eight tables: ~16 MB with slices (2 MB each), the same as four pictures' worth before. */
+const TABLE_CACHE_SIZE = 8
 
-function tablesFor(grid: FaceGrid, slices: boolean): Tables {
-  const key = `${slices ? 's' : 'f'}:${grid.join(',')}`
+/** The cache key of one table: kind, move set, its four colours and (with slices) the centre. */
+export function tableKey(kind: 'edge' | 'corner', grid: FaceGrid, slices: boolean): string {
+  const cells = kind === 'edge' ? F_EDGE_CELLS : F_CORNER_CELLS
+  const colors = cells.map((k) => grid[k]).join(',')
+  return `${kind}:${slices ? `s:${colors}:${grid[F_CENTER_CELL]}` : `f:${colors}`}`
+}
+
+let tablesBuilt = 0
+/** How many distance tables have been built so far (tests use it to prove one was reused). */
+export const faceSearchTablesBuilt = (): number => tablesBuilt
+
+function cachedTable(key: string, build: () => Int8Array): Int8Array {
   const hit = TABLE_CACHE.get(key)
   if (hit) {
     // Refresh: most recently used last.
@@ -203,17 +220,23 @@ function tablesFor(grid: FaceGrid, slices: boolean): Tables {
     TABLE_CACHE.set(key, hit)
     return hit
   }
+  const table = build()
+  tablesBuilt++
+  TABLE_CACHE.set(key, table)
+  if (TABLE_CACHE.size > TABLE_CACHE_SIZE) TABLE_CACHE.delete(TABLE_CACHE.keys().next().value!)
+  return table
+}
+
+function tablesFor(grid: FaceGrid, slices: boolean): Tables {
   const set = slices ? SLICE_SET : FACE_SET
   const centers = slices ? 6 : 1
   const n = set.moves.length
-  const tables: Tables = {
-    edge: buildTable(set.edgeNext, set.centerNext, n, EDGE_FACELETS, F_EDGE_CELLS.map((k) => grid[k]), grid[F_CENTER_CELL], centers),
-    corner: buildTable(set.cornerNext, set.centerNext, n, CORNER_FACELETS, F_CORNER_CELLS.map((k) => grid[k]), grid[F_CENTER_CELL], centers),
+  const center = grid[F_CENTER_CELL]
+  return {
+    edge: cachedTable(tableKey('edge', grid, slices), () => buildTable(set.edgeNext, set.centerNext, n, EDGE_FACELETS, F_EDGE_CELLS.map((k) => grid[k]), center, centers)),
+    corner: cachedTable(tableKey('corner', grid, slices), () => buildTable(set.cornerNext, set.centerNext, n, CORNER_FACELETS, F_CORNER_CELLS.map((k) => grid[k]), center, centers)),
     centers,
   }
-  TABLE_CACHE.set(key, tables)
-  if (TABLE_CACHE.size > TABLE_CACHE_SIZE) TABLE_CACHE.delete(TABLE_CACHE.keys().next().value!)
-  return tables
 }
 
 function checkGrid(grid: FaceGrid): void {

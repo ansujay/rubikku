@@ -390,10 +390,25 @@ const tests = {
   async design() {
     const cells = (page) => page.$$eval('[data-testid=design-canvas] [role=group] button[data-color]', (els) => els.map((e) => e.dataset.color[0].toUpperCase()).join(''))
     const ready = (page) => page.waitForSelector('[data-testid=design-result][data-state=ready]', { timeout: 15_000 })
-    const { page, context, errors } = await open('/patterns')
+    const { page, context, errors } = await open('/patterns?tab=flags')
+    // Keyboard: arrowing onto "Make your own" and back stays in the tablist, on the same page.
+    await page.waitForSelector('[data-testid=flag-collection-count]')
+    await page.evaluate(() => (document.querySelector('main [data-route]').__same = true))
+    await page.getByRole('tab', { name: 'Flags' }).focus()
+    await page.keyboard.press('ArrowRight')
+    await page.waitForSelector('[data-testid=design-studio]')
+    await page.waitForTimeout(400)
+    const onTab = () => page.evaluate(() => ({ role: document.activeElement?.getAttribute('role'), name: document.activeElement?.textContent.trim(), selected: document.activeElement?.getAttribute('aria-selected'), same: document.querySelectorAll('main [data-route]').length === 1 && document.querySelector('main [data-route]').__same === true }))
+    equal(JSON.stringify(await onTab()), JSON.stringify({ role: 'tab', name: 'Make your own', selected: 'true', same: true }), 'ArrowRight from Flags selects "Make your own", focus stays on the tab, the page is not remounted')
+    await page.keyboard.press('ArrowLeft')
+    await page.waitForSelector('[data-testid=flag-collection-count]')
+    await page.waitForTimeout(400)
+    equal(JSON.stringify(await onTab()), JSON.stringify({ role: 'tab', name: 'Flags', selected: 'true', same: true }), 'ArrowLeft goes back to Flags the same way')
+    check(!page.url().includes('face='), `leaving the designer drops its face from the address (${page.url()})`)
+    await page.getByRole('tab', { name: 'Tricks' }).click()
     await page.getByRole('tab', { name: 'Make your own' }).click()
     await page.waitForSelector('[data-testid=design-studio]')
-    check(page.url().includes('#/patterns/design?face=WWWWWWWWW'), `the tab opens the designer (${page.url()})`)
+    check(page.url().includes('#/patterns?tab=design&face=WWWWWWWWW'), `the tab opens the designer (${page.url()})`)
     equal(await page.getAttribute('[data-testid=design-result]', 'data-state'), 'plain', 'a blank canvas is plain, not "impossible"')
     check(await page.locator('[data-testid=design-make]').isDisabled(), 'Make it is off for a plain face')
 
@@ -419,7 +434,7 @@ const tests = {
     const progress = await saved(page, 'progress')
     check(Object.keys(progress.badges).includes('flag-designer'), 'the Flag Designer badge is earned')
     check(!Object.keys(progress.badges).some((id) => id === 'flag-bearer' || id === 'pattern-collector'), 'and no flag or trick badge')
-    equal(await page.getAttribute('[data-testid=back-link]', 'href'), '#/patterns/design?face=WWWWRWWWW', 'the back link returns to the design')
+    equal(await page.getAttribute('[data-testid=back-link]', 'href'), '#/patterns?tab=design&face=WWWWRWWWW', 'the back link returns to the design')
     await page.goto(`${BASE}/#/patterns`, { waitUntil: 'networkidle' })
     check((await page.textContent('[data-testid=collection-count]')).replace(/\s+/g, ' ').includes('0 of 12'), 'Tricks still say "0 of 12"')
     await page.getByRole('tab', { name: 'Flags' }).click()
@@ -427,11 +442,14 @@ const tests = {
     equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
     await context.close()
 
-    // The share link, in a fresh browser, and a reload.
-    const fresh = await open('/patterns/design?face=GGGWWWRRR')
+    // The share link, in a fresh browser, and a reload. An old /patterns/design link redirects
+    // to the tab, keeping its face and slices.
+    const fresh = await open('/patterns/design?face=GGGWWWRRR&slices=1')
     await fresh.page.waitForSelector('[data-testid=design-studio]')
     await ready(fresh.page)
+    equal(await fresh.page.evaluate(() => location.hash), '#/patterns?tab=design&face=GGGWWWRRR&slices=1', 'the old designer address redirects to the tab')
     equal(await cells(fresh.page), 'GGGWWWRRR', 'a shared designer link opens on its face')
+    check(await fresh.page.locator('[data-testid=design-slices] [role=switch]').isChecked(), 'and with middle slices on')
     await fresh.page.reload({ waitUntil: 'networkidle' })
     await ready(fresh.page)
     equal(await cells(fresh.page), 'GGGWWWRRR', 'the face survives a reload')

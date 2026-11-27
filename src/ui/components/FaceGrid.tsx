@@ -11,7 +11,7 @@ export interface FaceGridProps {
   showLetters?: boolean
   /** Makes every sticker a button (roving focus, arrow keys move across the grid). */
   onCellClick?: (index: number) => void
-  /** Cell drawn with a selection ring. */
+  /** Cell drawn with a selection ring. Passing it (even null) makes the stickers toggle buttons. */
   selected?: number | null
   /** Accessible name. Default "Front face". */
   label?: string
@@ -40,7 +40,7 @@ function neighbor(index: number, key: string): number | null {
  *   <FaceGrid colors={grid} size={16} />
  *   <FaceGrid colors={painted} onCellClick={paint} selected={cursor} showLetters />
  */
-export function FaceGrid({ colors, size, showLetters = false, onCellClick, selected = null, label = 'Front face', className }: FaceGridProps) {
+export function FaceGrid({ colors, size, showLetters = false, onCellClick, selected, label = 'Front face', className }: FaceGridProps) {
   const interactive = Boolean(onCellClick)
   const [focusIndex, setFocusIndex] = useState(() => (typeof selected === 'number' ? selected : 4))
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
@@ -81,7 +81,7 @@ export function FaceGrid({ colors, size, showLetters = false, onCellClick, selec
         type="button"
         tabIndex={focusIndex === i ? 0 : -1}
         aria-label={`${POSITION[i]}, ${name(color)}`}
-        aria-pressed={isSelected}
+        aria-pressed={selected === undefined ? undefined : isSelected}
         data-color={color ?? 'empty'}
         onFocus={() => setFocusIndex(i)}
         onKeyDown={(event) => onKeyDown(event, i)}
