@@ -42,7 +42,7 @@ export interface SolveStep {
   caseId: string
   /** Short case name: "White edge stuck in the middle layer". */
   caseName: string
-  /** What we see and why we do this, for an 11-year-old. */
+  /** What we see and why we do this, for a 10+ year-old. */
   explanation: string
   /** Everything to do in this step, in order: `setup` followed by `main`. Never empty. */
   moves: Move[]

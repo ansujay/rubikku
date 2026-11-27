@@ -120,7 +120,7 @@ Counts: **2 Must fix, 8 Should fix, 7 Polish.** Earlier items: 8/8 Must fixed (M
 ## The changes that would most raise the "wow" now
 
 1. **Seamless page transitions (M-new-1).** Overlap enter and exit and morph the page title. This is a small change that every tap benefits from, and it is the clearest remaining break in "fluid".
-2. **Put the child's cube at the centre of the milestone (N2).** A 240 px cube doing its victory spin under "You solved the cube", with a second confetti beat when the XP lands. This is where an 11-year-old decides the site is cool.
+2. **Put the child's cube at the centre of the milestone (N2).** A 240 px cube doing its victory spin under "You solved the cube", with a second confetti beat when the XP lands. This is where a 10+ year-old decides the site is cool.
 3. **Fit every stage page to the viewport (M-new-2, N1, N6).** Nothing important below the fold at 1024×768: timer result row, Free-play actions, lesson diagrams in the empty column under the stage.
 4. **Fix dark-theme dimming (N4).** Night use is half the brief, and in dark the "lit piece" teaching device currently barely works.
 5. **Learn map as a full-width S-curve (N8).** The cube fills up layer by layer down the page. The art already exists; it needs the stage.

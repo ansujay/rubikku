@@ -7,7 +7,7 @@ import { parseAlg, type Move } from './notation'
 export interface CubePattern {
   id: string
   name: string
-  /** One or two short sentences for an 11-year-old. */
+  /** One or two short sentences for a 10+ year-old. */
   description: string
   /** The algorithm as notation text. */
   alg: string

@@ -27,7 +27,7 @@ export interface CubeFlag {
   moves: readonly Move[]
   /** 1 (short) to 3 (long, follow along carefully). */
   difficulty: 1 | 2 | 3
-  /** One or two sentences for an 11-year-old. */
+  /** One or two sentences for a 10+ year-old. */
   description: string
   /** What the cube has to fake, e.g. "Orange stands in for apricot." */
   standIns?: string

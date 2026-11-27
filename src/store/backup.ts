@@ -55,7 +55,7 @@ export function createBackup(now: Date = new Date()): BackupFile {
 
 export const serializeBackup = (backup: BackupFile): string => JSON.stringify(backup, null, 2)
 
-/** Validate the text of a backup file. Error messages are written for an 11-year-old. */
+/** Validate the text of a backup file. Error messages are written for a 10+ year-old. */
 export function parseBackup(text: string): BackupParseResult {
   if (typeof text !== 'string' || text.trim().length === 0) {
     return { ok: false, error: 'That file is empty.' }

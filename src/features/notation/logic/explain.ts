@@ -1,4 +1,4 @@
-/** One-line explanations of a mistake, in words an 11-year-old can act on. */
+/** One-line explanations of a mistake, in words a 10+ year-old can act on. */
 import { MOVE_BASE_DEFS, describeMove, invertMove, moveAmount, moveBase, moveKind, type Move } from '../../../cube'
 
 /** "R′" with a real prime, for sentences. */

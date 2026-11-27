@@ -7,7 +7,7 @@ Rubikku's UI is made of the same stuff. Surfaces are quiet paper (day) or a dim 
 the things you can press are **keycaps** — a face sitting on an edge that sinks when you push
 it; the things that carry meaning are **stickers** — rounded squares in one of the six cube
 colours. It should read as a well-made game menu or a premium instrument, not a dashboard and
-not a cartoon. An 11-year-old should think "this is cool"; a designer should find nothing
+not a cartoon. A 10+ year-old should think "this is cool"; a designer should find nothing
 shouting.
 
 Three rules hold it together:

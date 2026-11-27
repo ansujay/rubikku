@@ -64,7 +64,7 @@ Counts: 8 Must fix, 14 Should fix, 12 Polish.
 ### M7. The celebrations do not match the achievements
 - **Where:** level-up and badge (two toasts); last lesson wrap-up "You can solve the cube" (a green callout and a bullet list); real cube solved in Solve my cube (a card with two stat tiles); pattern made (a green line of text).
 - **Shots:** `motion-toast-levelup.png`, `L-twist-wrap.tl.light.png`, `S-walk-finished.tl.dark.png`, `P-made.tl.dark.png`, `N-summary.tl.light.png`
-- **Wrong:** The biggest moments in the product look like routine status messages. Confetti exists but is stock `canvas-confetti`, duplicated in `features/play/celebrate.ts` and `features/timer/celebrate.ts` with different particle counts, and the cube itself never reacts. For an 11-year-old, finishing the last stage and getting a toast is the point where "cool" is decided.
+- **Wrong:** The biggest moments in the product look like routine status messages. Confetti exists but is stock `canvas-confetti`, duplicated in `features/play/celebrate.ts` and `features/timer/celebrate.ts` with different particle counts, and the cube itself never reacts. For a 10+ year-old, finishing the last stage and getting a toast is the point where "cool" is decided.
 - **Change:** Build one celebration module in `src/ui` with three tiers, and delete the two copies.
   - *Tick* (clean rep, correct answer): what exists now.
   - *Stage moment* (lesson complete, pattern collected, new badge): the cube does one 360° spin with a layer ripple (about 900 ms), the stage border flashes green once, the badge appears as a 96 px keycap that presses in, XP counts up beside it. No toast.

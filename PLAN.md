@@ -1,6 +1,6 @@
 # Rubikku — build plan
 
-A website that teaches an 11-year-old to solve a 3x3 cube. One interactive 3D cube sits at the
+A website that teaches a child aged 10+ to solve a 3x3 cube. One interactive 3D cube sits at the
 centre; lessons, hints, the timer and the "help with my real cube" flow all drive that same cube.
 It should feel like a coach beside him: fluid, tasteful, cool rather than childish.
 

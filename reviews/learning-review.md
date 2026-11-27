@@ -80,7 +80,7 @@ Two statements are wrong or only sometimes right; both are in finding M5: "For t
 ### M4. A stage "completes" with nothing done, and the rewards point the wrong way
 - **Where:** every lesson. "Skip" replaces "Next" on every guided exercise and on the drills; the wrap-up then says "Stage 1 complete. Clean drills: 0 of 3." (seen).
 - **What he experiences:** tapping Next/Skip sixteen times earns 120 XP, a stage badge and unlocks the next stage. Solving a drill cube unaided earns 15 XP. A "First Steps" badge pops up for opening a lesson.
-- **Why it matters:** an 11-year-old follows the points. The cheapest route to the next badge is to not practise, and each later stage assumes the earlier one is fluent. He arrives at stage 4 unable to do stage 3.
+- **Why it matters:** a 10+ year-old follows the points. The cheapest route to the next badge is to not practise, and each later stage assumes the earlier one is fluent. He arrives at stage 4 unable to do stage 3.
 - **Fix:**
   - A stage completes when he has solved **one drill cube** (hints allowed) — or the real-cube step from M1. Reaching the wrap-up without that shows "Lesson read. Solve one practice cube to finish the stage." and still lets him move on ("Peek ahead" already exists for that).
   - Rebalance: lesson read 40 XP, first drill solved 40, stage done on the real cube 80, mastery star 40.
@@ -149,7 +149,7 @@ Two statements are wrong or only sometimes right; both are in finding M5: "For t
 
 ### S4. The 8-move algorithms get one repetition each
 - **Where:** Middle layer "Your turn" (one right, one left, then alone); Yellow edges and Place the corners (one full-help run each).
-- **Why it matters:** an 8-move sequence needs about ten repetitions to stick in an 11-year-old's fingers. Here he gets one with arrows and is then asked to recall it.
+- **Why it matters:** an 8-move sequence needs about ten repetitions to stick in a 10+ year-old's fingers. Here he gets one with arrows and is then asked to recall it.
 - **Fix:** add a "five in a row" beat for each new algorithm of four moves or more: same set-up five times, help fading each time (arrows → chips only → first move only → nothing → nothing, timed for fun). Teach the middle inserts as two halves with names he can say: "Away, up, back, down — then the front does the same." Link each algorithm card's practice mode from the lesson. Tell him to do the same five on his real cube with a solved cube — for example: set up a T on purpose, send the edge in, and check the white layer is still whole.
 
 ### S5. Middle layer: the stuck-edge cure does not say which moves to make (from source)
