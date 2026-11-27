@@ -48,12 +48,14 @@ describe('heat-map', () => {
 
 describe('badge helpers', () => {
   it('reports progress for countable badges, clamped', () => {
-    const data = { ...initialProgress(), counters: { solves: 3, dailyChallenges: 9 }, patterns: ['a', 'b'], algorithms: ['x'] }
+    const data = { ...initialProgress(), counters: { solves: 3, dailyChallenges: 9 }, patterns: ['a', 'b', 'flag-x', 'flag-own'], algorithms: ['x'] }
     expect(badgeProgress('solves-10', data, 0, 1)).toEqual({ value: 3, max: 10, unit: 'solves' })
     expect(badgeProgress('daily-5', data, 0, 1)).toEqual({ value: 5, max: 5, unit: 'daily challenges' })
     expect(badgeProgress('streak-7', data, 4, 1)).toMatchObject({ value: 4, max: 7 })
     expect(badgeProgress('level-5', data, 0, 4)).toMatchObject({ value: 4, max: 5 })
     expect(badgeProgress('pattern-curator', data, 0, 1)).toMatchObject({ value: 2, max: 12 })
+    expect(badgeProgress('flag-bearer', data, 0, 1)).toEqual({ value: 1, max: 3, unit: 'flags' })
+    expect(badgeProgress('world-tour', data, 0, 1)).toMatchObject({ value: 1, max: 12 })
     expect(badgeProgress('first-solve', data, 0, 1)).toBeNull()
   })
 
@@ -71,6 +73,7 @@ describe('badge helpers', () => {
     expect(badgeLink(getBadge('sub-1')!).to).toBe('/timer')
     expect(badgeLink(getBadge('real-deal')!).to).toBe('/solve')
     expect(badgeLink(getBadge('pattern-curator')!).to).toBe('/patterns')
+    for (const id of ['flag-bearer', 'world-tour', 'flag-designer']) expect(badgeLink(getBadge(id)!).to).toBe('/patterns?tab=flags')
   })
 
   it('lists unlocked badges newest first, skipping unknown ids', () => {

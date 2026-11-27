@@ -210,6 +210,19 @@ export {
 export type { OptimalSolver, OptimalSolverOptions } from './optimal/optimalSolver'
 export type { SolverRequest, SolverResponse, SolverTransport } from './optimal/protocol'
 
+// --- One-face search: hold + shortest moves that put a 3x3 picture (a flag) on the front ------
+export { findFaceAlgs, faceShows, flagStart } from './faceSearch'
+export type { FaceGrid, FaceSolution, FaceSearchOptions } from './faceSearch'
+export { searchFace, peekFace, disposeFaceSearch, createFaceSearchClient, faceSearchKey, FaceSearchCancelled, isFaceSearchCancelled } from './faceSearchClient'
+export type { FaceSearchClient, FaceSearchClientOptions, FaceSearchQuery } from './faceSearchClient'
+export type { FaceSearchRequest, FaceSearchResponse, FaceSearchTransport } from './faceSearchProtocol'
+
+// --- Flags on the cube: hold + moves for 21 flags, their art specs, and the ones left out -----
+export { FLAGS, FLAG_FAMILIES, LEFT_OUT_FLAGS, getFlag } from './flags'
+export type { CubeFlag, FlagFamily, LeftOutFlag } from './flags'
+export { FLAG_PALETTE } from './flagPalette'
+export type { FlagArtSpec, FlagColor, FlagPaletteName } from './flagPalette'
+
 // --- Beginner-method stages, algorithm library, pattern library -------------------------------
 export { STAGE_IDS, BEGINNER_HOLD } from './stages'
 export type { StageId } from './stages'

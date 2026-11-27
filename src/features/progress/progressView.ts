@@ -2,7 +2,7 @@
  * Pure view-model helpers for the Progress page: the activity heat-map, how far along each
  * badge is, and how to word the event log. No React, no Date.now() — callers pass "today".
  */
-import { addDays, daysBetween, getBadge, NOTATION_MASTER_ROUNDS, weekOf, type BadgeDef, type LogEntry, type ProgressData } from '../../store'
+import { addDays, daysBetween, countPatterns, getBadge, NOTATION_MASTER_ROUNDS, weekOf, type BadgeDef, type LogEntry, type ProgressData } from '../../store'
 
 // ───────────────────────── Heat-map ─────────────────────────
 
@@ -97,8 +97,10 @@ const COUNT_GOALS: Record<string, { max: number; unit: string; value: (data: Pro
   'daily-5': { max: 5, unit: 'daily challenges', value: (d) => d.counters.dailyChallenges ?? 0 },
   'notation-master': { max: NOTATION_MASTER_ROUNDS, unit: 'perfect rounds', value: (d) => d.counters.notationPerfect ?? 0 },
   'algorithm-ace': { max: 10, unit: 'algorithms', value: (d) => d.algorithms.length },
-  'pattern-collector': { max: 5, unit: 'patterns', value: (d) => d.patterns.length },
-  'pattern-curator': { max: 12, unit: 'patterns', value: (d) => d.patterns.length },
+  'pattern-collector': { max: 5, unit: 'patterns', value: (d) => countPatterns(d.patterns).tricks },
+  'pattern-curator': { max: 12, unit: 'patterns', value: (d) => countPatterns(d.patterns).tricks },
+  'flag-bearer': { max: 3, unit: 'flags', value: (d) => countPatterns(d.patterns).flags },
+  'world-tour': { max: 12, unit: 'flags', value: (d) => countPatterns(d.patterns).flags },
   'level-5': { max: 5, unit: 'levels', value: (_, __, level) => level },
   'level-10': { max: 10, unit: 'levels', value: (_, __, level) => level },
   'full-method': { max: 8, unit: 'stages', value: (d) => Object.values(d.lessons).filter((lesson) => lesson.completedAt).length },
@@ -121,6 +123,7 @@ export function badgeLink(badge: BadgeDef): { to: string; label: string } {
   if (badge.category === 'solving') return { to: '/play', label: 'Pick up the cube' }
   if (badge.id.startsWith('notation')) return { to: '/notation', label: 'Open notation' }
   if (badge.id.startsWith('algorithm')) return { to: '/algorithms', label: 'Open algorithms' }
+  if (badge.id.startsWith('flag') || badge.id === 'world-tour') return { to: '/patterns?tab=flags', label: 'Open flags' }
   if (badge.id.startsWith('pattern')) return { to: '/patterns', label: 'Open patterns' }
   return { to: '/learn', label: 'Keep learning' }
 }

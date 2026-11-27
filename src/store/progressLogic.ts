@@ -10,6 +10,24 @@ import { STAGE_IDS } from './stages'
 
 // ───────────────────────── Data ─────────────────────────
 
+/** Flag ids in `patterns` start with this; everything else is a trick from the Patterns page. */
+export const FLAG_ID_PREFIX = 'flag-'
+/** The flag a kid designs on the "Make your own" tab. It earns its own badge but is not one of the 21. */
+export const DESIGNED_FLAG_ID = 'flag-own'
+
+export const isFlagId = (id: string): boolean => id.startsWith(FLAG_ID_PREFIX)
+
+/** Tricks and real flags made so far (the designed flag is in neither). */
+export function countPatterns(patterns: readonly string[]): { tricks: number; flags: number } {
+  let flags = 0
+  let tricks = 0
+  for (const id of patterns) {
+    if (!isFlagId(id)) tricks++
+    else if (id !== DESIGNED_FLAG_ID) flags++
+  }
+  return { tricks, flags }
+}
+
 export interface LessonProgress {
   startedAt: string
   completedAt: string | null
@@ -429,8 +447,12 @@ export function applyEvent<K extends ProgressEventType>(
         xp += XP.patternFirst
         next = { ...next, patterns: [...next.patterns, patternId] }
       }
-      if (next.patterns.length >= 5) award('pattern-collector')
-      if (next.patterns.length >= 12) award('pattern-curator')
+      const { tricks, flags } = countPatterns(next.patterns)
+      if (tricks >= 5) award('pattern-collector')
+      if (tricks >= 12) award('pattern-curator')
+      if (flags >= 3) award('flag-bearer')
+      if (flags >= 12) award('world-tour')
+      if (next.patterns.includes(DESIGNED_FLAG_ID)) award('flag-designer')
       break
     }
     case 'daily-challenge-completed':

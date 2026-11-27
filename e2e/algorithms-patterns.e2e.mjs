@@ -10,6 +10,7 @@
  * Covers: the gallery (filter, search, deep links), stepping through an algorithm, a practice
  * rep with a refused wrong move and a double turn, mastery shown on the cards, the flash cards,
  * making a pattern, the collected state, undoing it, follow-along, persistence across reloads,
+ * the flags tab (making Nigeria, India's rotated start and hold), the "make your own" designer,
  * and no console errors.
  */
 import { createRequire } from 'node:module'
@@ -311,6 +312,155 @@ const tests = {
     check((await saved(page, 'progress')).patterns.includes('six-spots'), 'saying "I made it" on the real cube collects it')
     equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
     await context.close()
+  },
+
+  // ── flags: the tab, the 21 cards, making Nigeria, counts ──
+  async flags() {
+    const { page, context, errors } = await open('/patterns')
+    await page.waitForSelector('[data-testid^=pattern-card-]')
+    await page.getByRole('tab', { name: 'Flags' }).click()
+    await page.waitForSelector('[data-testid^=flag-card-]')
+    check(page.url().endsWith('#/patterns?tab=flags'), `the Flags tab is in the address (${page.url()})`)
+    equal(await page.locator('[data-testid^=flag-card-]').count(), 21, 'twenty-one flag cards')
+    equal(await page.locator('[data-testid^=pattern-card-]').count(), 0, 'and no trick cards on that tab')
+    check((await page.textContent('[data-testid=flag-collection-count]')).replace(/\s+/g, ' ').includes('0 of 21'), 'no flags made yet')
+    check((await page.locator('[data-testid^=flag-family-]').count()) >= 2, 'the flags are grouped in families')
+    check((await page.locator('[data-testid=flags-left-out]').count()) === 1, 'there is a "why isn\'t my flag here" note')
+
+    await page.click('[data-testid=flag-card-flag-nigeria]')
+    await cubeReady(page, 'pattern')
+    check(page.url().endsWith('#/patterns/flag-nigeria'), 'the card opens a deep-linkable page')
+    equal(await page.getAttribute('[data-testid=back-link]', 'href'), '#/patterns?tab=flags', 'the back link returns to the Flags tab')
+    const flagEnd = after('M')
+    equal(await stateOf(page, 'pattern'), SOLVED, 'Nigeria starts from a plain solved cube')
+    await page.click('[data-testid=watch-play]')
+    await waitState(page, 'pattern', flagEnd)
+    equal((await stateOf(page, 'pattern')).slice(18, 27), flagEnd.slice(18, 27), 'watching ends with the flag on the front face')
+    equal(await page.textContent('[data-testid=collected-badge]'), 'Not made yet', 'watching does not collect it')
+    await page.click('[data-testid=undo-it]')
+    await waitState(page, 'pattern', SOLVED)
+
+    await page.click('[role=radio]:has-text("Try it")')
+    await page.waitForSelector('[data-testid=try-panel]')
+    await keys(page, 'pattern', 'M')
+    await page.waitForSelector('[data-testid=made-banner]')
+    equal((await stateOf(page, 'pattern')).slice(18, 27), flagEnd.slice(18, 27), 'trying it with M puts the flag on the front')
+    await page.waitForFunction(() => document.querySelector('[data-testid=collected-badge]')?.textContent.includes('Collected'))
+    const progress = await saved(page, 'progress')
+    check(progress.patterns.includes('flag-nigeria'), 'progress has flag-nigeria')
+    check(!Object.keys(progress.badges).some((id) => id === 'flag-bearer' || id === 'pattern-collector'), 'one flag earns no flag or trick badge yet')
+
+    await page.goto(`${BASE}/#/patterns?tab=flags`, { waitUntil: 'networkidle' })
+    await page.waitForSelector('[data-testid^=flag-card-]')
+    check((await page.textContent('[data-testid=flag-collection-count]')).replace(/\s+/g, ' ').includes('1 of 21'), 'the Flags tab counts "1 of 21"')
+    equal(await page.getAttribute('[data-testid=flag-card-flag-nigeria]', 'data-made'), 'true', 'the Nigeria card is marked made')
+    await page.getByRole('tab', { name: 'Tricks' }).click()
+    await page.waitForSelector('[data-testid^=pattern-card-]')
+    check((await page.textContent('[data-testid=collection-count]')).replace(/\s+/g, ' ').includes('0 of 12'), 'Tricks still say "0 of 12"')
+    equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
+    await context.close()
+  },
+
+  // ── a flag that starts from a rotated cube: the hold, and follow mode ──
+  async 'flag-hold'() {
+    const { page, context, errors } = await open('/patterns/flag-india', { cube: 'pattern' })
+    await page.waitForSelector('[data-testid=watch-panel]')
+    const hold = (await page.textContent('[data-testid=hold-line]')).replace(/\s+/g, ' ')
+    check(/white/i.test(hold) && /blue/i.test(hold), `the hold line names white and blue (${hold})`)
+    check(await page.locator('[data-testid=flag-compare]').isVisible(), 'the real-vs-cube card is shown')
+    const start = after('y2')
+    equal(await stateOf(page, 'pattern'), start, 'India starts from a solved cube held with white on top')
+    await page.click('[data-testid=watch-play]')
+    await waitState(page, 'pattern', after("y2 R' D2 U B' L"))
+    check((await page.textContent('[data-testid=cube-status]')).includes('India'), 'at the end the cube is recognised as India')
+    await page.close()
+
+    const follow = await open('/patterns/flag-india?mode=follow', { cube: 'pattern' })
+    await follow.page.waitForSelector('[data-testid=follow-panel]')
+    equal(await stateOf(follow.page, 'pattern'), start, 'follow mode starts from the rotated solved cube')
+    equal((await follow.page.textContent('[data-testid=follow-move]')).trim(), 'R′', 'the first move is R′')
+    check((await follow.page.textContent('[data-testid=follow-hold]')).includes('white on top and blue facing you'), 'the hold is explained for a real cube')
+    equal(follow.errors.length, 0, `no console errors: ${follow.errors.join(' | ')}`)
+    await follow.context.close()
+    equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
+    await context.close()
+  },
+
+  // ── the designer: paint, result, make it, try it, the badge, the share link ──
+  async design() {
+    const cells = (page) => page.$$eval('[data-testid=design-canvas] [role=group] button[data-color]', (els) => els.map((e) => e.dataset.color[0].toUpperCase()).join(''))
+    const ready = (page) => page.waitForSelector('[data-testid=design-result][data-state=ready]', { timeout: 15_000 })
+    const { page, context, errors } = await open('/patterns?tab=flags')
+    // Keyboard: arrowing onto "Make your own" and back stays in the tablist, on the same page.
+    await page.waitForSelector('[data-testid=flag-collection-count]')
+    await page.evaluate(() => (document.querySelector('main [data-route]').__same = true))
+    await page.getByRole('tab', { name: 'Flags' }).focus()
+    await page.keyboard.press('ArrowRight')
+    await page.waitForSelector('[data-testid=design-studio]')
+    await page.waitForTimeout(400)
+    const onTab = () => page.evaluate(() => ({ role: document.activeElement?.getAttribute('role'), name: document.activeElement?.textContent.trim(), selected: document.activeElement?.getAttribute('aria-selected'), same: document.querySelectorAll('main [data-route]').length === 1 && document.querySelector('main [data-route]').__same === true }))
+    equal(JSON.stringify(await onTab()), JSON.stringify({ role: 'tab', name: 'Make your own', selected: 'true', same: true }), 'ArrowRight from Flags selects "Make your own", focus stays on the tab, the page is not remounted')
+    await page.keyboard.press('ArrowLeft')
+    await page.waitForSelector('[data-testid=flag-collection-count]')
+    await page.waitForTimeout(400)
+    equal(JSON.stringify(await onTab()), JSON.stringify({ role: 'tab', name: 'Flags', selected: 'true', same: true }), 'ArrowLeft goes back to Flags the same way')
+    check(!page.url().includes('face='), `leaving the designer drops its face from the address (${page.url()})`)
+    await page.getByRole('tab', { name: 'Tricks' }).click()
+    await page.getByRole('tab', { name: 'Make your own' }).click()
+    await page.waitForSelector('[data-testid=design-studio]')
+    check(page.url().includes('#/patterns?tab=design&face=WWWWWWWWW'), `the tab opens the designer (${page.url()})`)
+    equal(await page.getAttribute('[data-testid=design-result]', 'data-state'), 'plain', 'a blank canvas is plain, not "impossible"')
+    check(await page.locator('[data-testid=design-make]').isDisabled(), 'Make it is off for a plain face')
+
+    await page.click('[data-testid=design-paint-red] button')
+    await page.locator('[data-testid=design-canvas] [role=group][aria-label^="Your design"] button').nth(4).click()
+    await ready(page)
+    equal(await cells(page), 'WWWWRWWWW', 'the centre is painted red')
+    equal(await page.getAttribute('[data-testid=design-result]', 'data-moves'), '6', 'a red dot takes 6 moves')
+    check(await page.locator('[data-testid=design-looks-like]').isVisible(), 'it says the design looks like a real flag (Japan)')
+    check((await page.evaluate(() => location.hash)).includes('face=WWWWRWWWW'), 'the address follows the canvas')
+    const alg = await page.getAttribute('[data-testid=design-result]', 'data-alg')
+    equal(alg.split(' ').length, 6, 'the result carries its moves')
+
+    await page.click('[data-testid=design-make]')
+    await page.waitForSelector('[data-testid=watch-panel]', { timeout: 15_000 })
+    equal(await page.evaluate(() => location.hash), '#/patterns/flag-own?face=WWWWRWWWW', 'Make it opens the player with the design')
+    await cubeReady(page, 'pattern')
+    await page.click('[role=radio]:has-text("Try it")')
+    await page.waitForSelector('[data-testid=try-panel]')
+    await keys(page, 'pattern', alg)
+    await page.waitForSelector('[data-testid=made-banner]', { timeout: 8000 })
+    await page.waitForFunction(() => document.querySelector('[data-testid=collected-badge]')?.textContent.includes('Made it'))
+    const progress = await saved(page, 'progress')
+    check(Object.keys(progress.badges).includes('flag-designer'), 'the Flag Designer badge is earned')
+    check(!Object.keys(progress.badges).some((id) => id === 'flag-bearer' || id === 'pattern-collector'), 'and no flag or trick badge')
+    equal(await page.getAttribute('[data-testid=back-link]', 'href'), '#/patterns?tab=design&face=WWWWRWWWW', 'the back link returns to the design')
+    await page.goto(`${BASE}/#/patterns`, { waitUntil: 'networkidle' })
+    check((await page.textContent('[data-testid=collection-count]')).replace(/\s+/g, ' ').includes('0 of 12'), 'Tricks still say "0 of 12"')
+    await page.getByRole('tab', { name: 'Flags' }).click()
+    check((await page.textContent('[data-testid=flag-collection-count]')).replace(/\s+/g, ' ').includes('0 of 21'), 'Flags still say "0 of 21"')
+    equal(errors.length, 0, `no console errors: ${errors.join(' | ')}`)
+    await context.close()
+
+    // The share link, in a fresh browser, and a reload. An old /patterns/design link redirects
+    // to the tab, keeping its face and slices.
+    const fresh = await open('/patterns/design?face=GGGWWWRRR&slices=1')
+    await fresh.page.waitForSelector('[data-testid=design-studio]')
+    await ready(fresh.page)
+    equal(await fresh.page.evaluate(() => location.hash), '#/patterns?tab=design&face=GGGWWWRRR&slices=1', 'the old designer address redirects to the tab')
+    equal(await cells(fresh.page), 'GGGWWWRRR', 'a shared designer link opens on its face')
+    check(await fresh.page.locator('[data-testid=design-slices] [role=switch]').isChecked(), 'and with middle slices on')
+    await fresh.page.reload({ waitUntil: 'networkidle' })
+    await ready(fresh.page)
+    equal(await cells(fresh.page), 'GGGWWWRRR', 'the face survives a reload')
+    await fresh.page.goto(`${BASE}/#/patterns/flag-own?face=GGGWWWRRR`, { waitUntil: 'networkidle' })
+    await fresh.page.waitForSelector('[data-testid=watch-panel]', { timeout: 15_000 })
+    equal((await fresh.page.textContent('h1')).trim(), 'Your design', 'the player link shows "Your design"')
+    await fresh.page.reload({ waitUntil: 'networkidle' })
+    await fresh.page.waitForSelector('[data-testid=watch-panel]', { timeout: 15_000 })
+    check(true, 'the player link reloads')
+    equal(fresh.errors.length, 0, `no console errors: ${fresh.errors.join(' | ')}`)
+    await fresh.context.close()
   },
 }
 

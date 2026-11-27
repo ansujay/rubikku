@@ -2,34 +2,156 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { reward } from '../../app/rewards'
-import { PATTERNS as ALL_PATTERNS } from '../../cube'
-import { SOLVED, applyAlg, describeMove, getPattern, isSolved, type CubePattern, type CubeState, type Move } from '../../cube'
-import { useProgress } from '../../store'
+import { applyAlg, describeMove, isFaceSearchCancelled, isSolved, peekFace, searchFace, type CubeState, type FaceSolution, type Move } from '../../cube'
+import { DESIGNED_FLAG_ID, useProgress } from '../../store'
 import { Cube3D, StageControls, useCubeController } from '../../three'
-import { Badge, Button, ButtonLink, Card, CubeStage, cx, EmptyState, Icon, IconButton, Kbd, MoveChip, MoveSequence, Page, PlaybackBar, Reveal, SegmentedControl, sound, springs, Sticker, useCelebrations } from '../../ui'
+import { Badge, Button, ButtonLink, Card, CubeStage, CubeSwatch, cx, EmptyState, FaceGrid, FlagArt, Icon, IconButton, Kbd, MoveChip, MoveSequence, Page, PlaybackBar, Reveal, SegmentedControl, sound, springs, Spinner, Sticker, useCelebrations } from '../../ui'
 import { pretty } from '../notation/logic/explain'
 import { FOLLOW_START, acceptsMove, followMove, type FollowState } from '../notation/logic/follow'
-import { patternState, showsPattern, undoMoves } from './logic'
+import { collectionLine, designerLink, designMakeable, faceCode, getMakeable, holdColors, isPlainFace, makeableEnd, parseFaceCode, undoMoves, type Makeable } from './logic'
 import { Difficulty } from './PatternsPage'
 import { usePatterns } from './patternsStore'
 
 type Mode = 'watch' | 'try' | 'follow'
 const SPEEDS = [0.5, 1, 2] as const
+/** Flags start held a new way: turn the camera further round to the front so the flag face reads. */
+const FLAG_POSE = { azimuth: 0.35, elevation: 0.3 }
 
 export default function PatternDetailPage() {
   const { id = '' } = useParams()
-  const pattern = getPattern(id)
-  if (!pattern) {
+  if (id === DESIGNED_FLAG_ID) return <DesignDetail />
+  const item = getMakeable(id)
+  if (!item) {
     return (
       <Page width="narrow">
-        <EmptyState headingLevel="h1" icon="grid" tone="white" title="No pattern by that name" description="All twelve are in the gallery." action={<ButtonLink to="/patterns">Open the gallery</ButtonLink>} />
+        <EmptyState headingLevel="h1" icon="grid" tone="white" title="No pattern by that name" description="Every trick and flag is in the gallery." action={<ButtonLink to="/patterns">Open the gallery</ButtonLink>} />
       </Page>
     )
   }
-  return <Detail key={pattern.id} pattern={pattern} />
+  return <MakeableDetail key={item.id} item={item} />
 }
 
-function Detail({ pattern }: { pattern: CubePattern }) {
+/**
+ * A face he painted on the designer: `/patterns/flag-own?face=OOOWBWGGG[&slices=1]`. The moves
+ * are worked out again in the background (the same answer every time, and instant when the
+ * designer has just found them), so the link can be shared and reloaded.
+ */
+function DesignDetail() {
+  const [params] = useSearchParams()
+  const grid = useMemo(() => parseFaceCode(params.get('face')), [params])
+  const slices = params.get('slices') === '1'
+  const code = grid ? faceCode(grid) : ''
+  const [found, setFound] = useState<{ key: string; solution: FaceSolution | null; failed?: boolean } | null>(null)
+  const key = `${code}${slices ? '+s' : ''}`
+  const cached = grid ? peekFace(grid, { slices }) : undefined
+  const result = found?.key === key ? found : cached !== undefined ? { key, solution: cached } : null
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!grid || isPlainFace(grid) || peekFace(grid, { slices }) !== undefined) return
+    let live = true
+    searchFace(grid, { slices }).then(
+      (solution) => live && setFound({ key, solution }),
+      (error: unknown) => live && !isFaceSearchCancelled(error) && setFound({ key, solution: null, failed: true }),
+    )
+    return () => {
+      live = false
+    }
+  }, [grid, slices, key, attempt])
+
+  const solution = result?.solution ?? null
+  const item = useMemo(() => (grid && solution ? designMakeable(grid, solution, slices) : null), [grid, solution, slices])
+
+  if (!grid || isPlainFace(grid)) {
+    return (
+      <Page width="narrow">
+        <EmptyState
+          headingLevel="h1"
+          icon="flag"
+          tone="white"
+          title={grid ? 'That is a plain face' : 'Paint a design first'}
+          description={grid ? 'A solved cube already shows it. Paint a few stickers a new colour and there will be moves to make.' : 'Pick colours, tap stickers, and the moves to make it appear on their own.'}
+          action={<ButtonLink to={grid ? designerLink(code, slices) : '/patterns?tab=design'}>Open the designer</ButtonLink>}
+        />
+      </Page>
+    )
+  }
+  if (result && (result.failed || !result.solution)) {
+    return (
+      <Page width="narrow">
+        <EmptyState
+          headingLevel="h1"
+          icon="flag"
+          tone="white"
+          title="The moves did not load"
+          description="Something went wrong while working them out. Have another go."
+          action={
+            <Button iconLeft="restart" onClick={() => { setFound(null); setAttempt((n) => n + 1) }}>
+              Try again
+            </Button>
+          }
+        />
+      </Page>
+    )
+  }
+  if (!item) {
+    return (
+      <Page width="narrow">
+        <div className="flex min-h-64 flex-col items-center justify-center gap-4 text-center" role="status" data-testid="design-loading">
+          <FaceGrid colors={grid} size={28} label="Your design" />
+          <p className="flex items-center gap-2 text-base font-semibold text-ink-muted">
+            <Spinner /> Working out the moves…
+          </p>
+        </div>
+      </Page>
+    )
+  }
+  return <MakeableDetail key={item.placeId} item={item} />
+}
+
+/** "Hold it like this": the two centre colours that say how to pick up the solved cube. */
+function HoldLine({ item, className }: { item: Makeable; className?: string }) {
+  const { top, front } = holdColors(item.start)
+  return (
+    <div className={cx('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-inset px-3 py-2.5 text-sm font-semibold text-ink', className)} data-testid="hold-line">
+      <span className="eyebrow basis-full">Hold it like this</span>
+      <span className="inline-flex items-center gap-1.5">
+        <CubeSwatch color={top} size="sm" showLetter /> {top} on top,
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <CubeSwatch color={front} size="sm" showLetter /> {front} facing you
+      </span>
+    </div>
+  )
+}
+
+/** The real flag beside the nine stickers the cube can show, with what the cube has to fake. */
+function FlagCompare({ item }: { item: Makeable }) {
+  if (!item.grid) return null
+  const flag = item.flag
+  const notes = [flag?.standIns, flag?.alsoLooksLike && `It also looks like ${flag.alsoLooksLike}.`].filter(Boolean)
+  return (
+    <Card padding="md" className="flex flex-col gap-3" data-testid="flag-compare">
+      <div className="grid grid-cols-[minmax(0,3fr)_auto_minmax(0,2fr)] items-end gap-3">
+        {flag && (
+          <figure className="flex min-w-0 flex-col gap-2">
+            <FlagArt spec={flag.art} label={`Flag of ${flag.name}`} className="w-full" />
+            <figcaption className="eyebrow">The real one</figcaption>
+          </figure>
+        )}
+        {flag && <Icon name="arrowRight" size={18} className="mb-[calc(50%_-_0.5rem)] self-center text-ink-faint" />}
+        <figure className={cx('flex min-w-0 flex-col gap-2', !flag && 'col-span-3 mx-auto w-32')}>
+          <FaceGrid colors={item.grid} label={`${item.name} on the front of the cube`} />
+          <figcaption className="eyebrow">On your cube</figcaption>
+        </figure>
+      </div>
+      {notes.length > 0 && <p className="text-sm text-ink-muted">{notes.join(' ')}</p>}
+    </Card>
+  )
+}
+
+/** The detail player for anything makeable: Watch, Try it and Real cube. */
+export function MakeableDetail({ item }: { item: Makeable }) {
   const [params, setParams] = useSearchParams()
   const raw = params.get('mode')
   const mode: Mode = raw === 'try' || raw === 'follow' ? raw : 'watch'
@@ -40,10 +162,20 @@ function Detail({ pattern }: { pattern: CubePattern }) {
     setParams(updated, { replace: true })
   }
 
-  const moves = pattern.moves
-  const target = useMemo(() => patternState(pattern), [pattern])
-  const undo = useMemo(() => undoMoves(pattern), [pattern])
-  const owned = useProgress((s) => s.patterns.includes(pattern.id))
+  const moves = item.moves
+  const start = item.start
+  // Where "try it" and "real cube" remember his place: each design has its own.
+  const placeId = item.placeId ?? item.id
+  const isDesign = item.kind === 'design'
+  const target = useMemo(() => makeableEnd(item), [item])
+  const undo = useMemo(() => undoMoves(item), [item])
+  const noun = item.kind === 'trick' ? 'pattern' : 'flag'
+  // Tricks all start the standard way; anything else says how to pick the cube up first.
+  const holdFirst = item.kind !== 'trick'
+  const ownedEver = useProgress((s) => s.patterns.includes(item.id))
+  // Every design shares one progress id, so "made" for a design means made on this visit.
+  const [madeHere, setMadeHere] = useState(false)
+  const owned = isDesign ? madeHere : ownedEver
   // While the "Pattern made" card is up it says so; the header's "Collected" joins after it
   // leaves, so one achievement is not four "done" signals at once (design review 2, P-a).
   const celebrating = useCelebrations((s) => s.current !== null)
@@ -72,7 +204,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
   const [undoing, setUndoing] = useState(false)
   const [justMade, setJustMade] = useState(false)
 
-  const cube = useCubeController({ initial: SOLVED, onUserMove: (move, state) => handleTurn(move, state) })
+  const cube = useCubeController({ initial: start, onUserMove: (move, state) => handleTurn(move, state) })
   const { controller, player } = cube
 
   // Set the cube up for the mode (and restore where he was).
@@ -81,29 +213,31 @@ function Detail({ pattern }: { pattern: CubePattern }) {
     setNudge(false)
     setUndoing(false)
     if (mode === 'try') {
-      const at = Math.min(usePatterns.getState().tryAt[pattern.id] ?? 0, moves.length)
-      controller.reset(applyAlg(SOLVED, moves.slice(0, at)))
+      const at = Math.min(usePatterns.getState().tryAt[placeId] ?? 0, moves.length)
+      controller.reset(applyAlg(start, moves.slice(0, at)))
       setFollow({ index: at, partial: null })
     } else {
-      controller.load(moves, { from: SOLVED, autoplay: false })
-      if (mode === 'follow') controller.seek(usePatterns.getState().followAt[pattern.id] ?? 0)
+      controller.load(moves, { from: start, autoplay: false })
+      if (mode === 'follow') controller.seek(usePatterns.getState().followAt[placeId] ?? 0)
       setFollow(FOLLOW_START)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, pattern.id])
+  }, [mode, item.id])
 
   const celebrate = () => {
-    if (!useProgress.getState().patterns.includes(pattern.id)) {
+    if (isDesign ? !madeHere : !useProgress.getState().patterns.includes(item.id)) {
       sawCard.current = false
       setHoldCollected(true)
     }
+    setMadeHere(true)
     setJustMade(true)
     window.setTimeout(() => setJustMade(false), 2600)
     window.setTimeout(() => {
       // A stage moment: the cube spins, the card lands (with the XP and any badge it earned).
-      const already = useProgress.getState().patterns.includes(pattern.id)
-      const count = useProgress.getState().patterns.length + (already ? 0 : 1)
-      reward('pattern-made', { patternId: pattern.id }, { moment: { eyebrow: already ? 'Made it again' : 'Pattern made', title: pattern.name, subtitle: `${count} of ${ALL_PATTERNS.length} in your collection`, icon: 'grid' } })
+      const made = useProgress.getState().patterns
+      const already = made.includes(item.id)
+      const eyebrow = isDesign ? 'Design made' : already ? 'Made it again' : item.kind === 'trick' ? 'Pattern made' : 'Flag made'
+      reward('pattern-made', { patternId: item.id }, { moment: { eyebrow, title: item.name, subtitle: collectionLine(item, made), icon: item.kind === 'trick' ? 'grid' : 'flag' } })
     }, 240)
   }
 
@@ -115,9 +249,9 @@ function Detail({ pattern }: { pattern: CubePattern }) {
     if (result.status === 'wrong') return
     setNudge(false)
     setFollow(result.next)
-    usePatterns.getState().setTryAt(pattern.id, result.next.index)
-    // The real test: does the cube show the pattern, however it is held?
-    if (showsPattern(state, pattern)) celebrate()
+    usePatterns.getState().setTryAt(placeId, result.next.index)
+    // The real test: does the cube show it, however it is held?
+    if (item.shows(state)) celebrate()
   }
 
   const allowMove = useCallback((move: Move) => !controller.getSnapshot().busy && acceptsMove(moves, followRef.current, move), [controller, moves])
@@ -130,10 +264,10 @@ function Detail({ pattern }: { pattern: CubePattern }) {
 
   const restartTry = () => {
     controller.stop()
-    controller.reset(SOLVED)
+    controller.reset(start)
     setFollow(FOLLOW_START)
     setNudge(false)
-    usePatterns.getState().setTryAt(pattern.id, 0)
+    usePatterns.getState().setTryAt(placeId, 0)
   }
 
   // ── undo: the same moves backwards ──
@@ -144,13 +278,13 @@ function Detail({ pattern }: { pattern: CubePattern }) {
     controller.load(undo, { from: target, autoplay: true, speed: 1 })
     if (mode === 'try') {
       setFollow(FOLLOW_START)
-      usePatterns.getState().setTryAt(pattern.id, 0)
+      usePatterns.getState().setTryAt(placeId, 0)
     }
   }
 
   const watchAgain = () => {
     setUndoing(false)
-    controller.load(moves, { from: SOLVED, autoplay: true })
+    controller.load(moves, { from: start, autoplay: true })
   }
 
   // After undoing in "try" mode, hand the cube back for another go.
@@ -159,17 +293,17 @@ function Detail({ pattern }: { pattern: CubePattern }) {
     if (mode === 'try' && undoFinished) {
       const timer = window.setTimeout(() => {
         setUndoing(false)
-        controller.reset(SOLVED)
+        controller.reset(start)
       }, 1400)
       return () => window.clearTimeout(timer)
     }
-  }, [mode, undoFinished, controller])
+  }, [mode, undoFinished, controller, start])
 
   // ── follow along ──
 
   const followPos = mode === 'follow' && player ? player.position : 0
   useEffect(() => {
-    if (mode === 'follow' && player) usePatterns.getState().setFollowAt(pattern.id, player.position)
+    if (mode === 'follow' && player) usePatterns.getState().setFollowAt(placeId, player.position)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, followPos])
 
@@ -205,7 +339,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
 
   // ── what to show ──
 
-  const showing = showsPattern(cube.state, pattern)
+  const showing = item.shows(cube.state)
   const solved = isSolved(cube.state)
   const tryDone = mode === 'try' && follow.index >= moves.length && !undoing
   const nextTry = mode === 'try' && !undoing && follow.index < moves.length ? moves[follow.index] : null
@@ -223,13 +357,13 @@ function Detail({ pattern }: { pattern: CubePattern }) {
           <div className="min-w-0">
             <h2 className="text-lg text-ink">{undoing && undoFinished ? 'Back to solved' : 'Every algorithm can be undone'}</h2>
             <p className="mt-0.5 text-base text-ink-muted">
-              {undoing && undoFinished ? 'That trick works for any moves at all, not just this pattern.' : 'Do the same moves backwards, last one first, and turn each one the other way.'}
+              {undoing && undoFinished ? `That trick works for any moves at all, not just this ${noun}.` : 'Do the same moves backwards, last one first, and turn each one the other way.'}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5">
           <span className="eyebrow">Made by</span>
-          <MoveSequence moves={moves} size="sm" label="The pattern's moves" className={cx(undoing && 'opacity-50')} />
+          <MoveSequence moves={moves} size="sm" label={`The ${noun}'s moves`} className={cx(undoing && 'opacity-50')} />
           <span className="eyebrow">Undone by</span>
           <MoveSequence
             moves={undo}
@@ -257,19 +391,19 @@ function Detail({ pattern }: { pattern: CubePattern }) {
   return (
     <Page>
       <Reveal as="header" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 md:mb-5">
-        <Link to="/patterns" aria-label="All patterns" className="key key-secondary grid size-10 shrink-0 place-items-center rounded-sm">
+        <Link to={item.back.to} aria-label={item.back.label} data-testid="back-link" className="key key-secondary grid size-10 shrink-0 place-items-center rounded-sm">
           <Icon name="arrowLeft" size={18} weight={2.4} />
         </Link>
         <div className="min-w-0 grow">
-          <h1 className="text-2xl text-ink md:text-3xl">{pattern.name}</h1>
-          <Difficulty level={pattern.difficulty} className="mt-1" />
+          <h1 className="text-2xl text-ink md:text-3xl">{item.name}</h1>
+          <Difficulty level={item.difficulty} className="mt-1" />
         </div>
         <AnimatePresence mode="popLayout" initial={false}>
           {!holdCollected && (
           <motion.span key={collected ? 'yes' : 'no'} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={springs.bouncy}>
             {collected ? (
               <Badge tone="green" variant="solid" icon="check" size="md" data-testid="collected-badge">
-                Collected
+                {isDesign ? 'Made it' : 'Collected'}
               </Badge>
             ) : (
               <Badge tone="neutral" size="md" data-testid="collected-badge">
@@ -290,7 +424,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
           className={cx('flex min-w-0 flex-col gap-3 lg:sticky lg:top-6', mode === 'follow' && 'max-lg:[grid-area:stage]')}
         >
           <CubeStage
-            label={`${pattern.name} on the cube`}
+            label={`${item.name} on the cube`}
             fit="square"
             maxViewHeight={mode === 'follow' ? 'calc(100dvh - 22rem)' : 'calc(100dvh - 18rem)'}
             minViewHeight="15rem"
@@ -303,7 +437,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
                     {(showing || solved) && !cube.busy && (
                       <motion.span key={showing ? 'pattern' : 'solved'} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={springs.bouncy}>
                         <Badge tone={showing ? 'green' : 'neutral'} icon={showing ? 'sparkle' : undefined} data-testid="cube-status">
-                          {showing ? pattern.name : 'Solved'}
+                          {showing ? item.name : 'Solved'}
                         </Badge>
                       </motion.span>
                     )}
@@ -312,7 +446,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
               />
             }
           >
-            <Cube3D {...cube.bind} mode={mode === 'try' && !undoing ? 'interactive' : 'view'} allowMove={allowMove} onRejectedMove={onRejected} arrow={arrow} debugId="pattern" />
+            <Cube3D {...cube.bind} initialPose={item.kind === 'trick' ? undefined : FLAG_POSE} mode={mode === 'try' && !undoing ? 'interactive' : 'view'} allowMove={allowMove} onRejectedMove={onRejected} arrow={arrow} debugId="pattern" />
             <AnimatePresence>
               {justMade && (
                 <motion.div className="pointer-events-none absolute inset-x-0 bottom-[12%] flex justify-center" initial={{ opacity: 0, y: 14, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8 }} transition={springs.bouncy} data-testid="made-banner">
@@ -355,13 +489,14 @@ function Detail({ pattern }: { pattern: CubePattern }) {
             <>
               {!undoing && (
                 <Card padding="md" className="flex flex-col gap-3" data-testid="watch-panel">
-                  <p className="text-base text-ink-muted">{pattern.description}</p>
+                  <p className="text-base text-ink-muted">{item.description}</p>
+                  {holdFirst && player.position === 0 && !player.playing && <HoldLine item={item} />}
                   <MoveSequence
                     moves={player.alg}
                     size={player.alg.length > 12 ? 'sm' : 'md'}
                     activeIndex={player.detached ? undefined : player.activeIndex >= 0 ? player.activeIndex : player.position}
                     onMoveClick={(index) => player.seek(index + 1)}
-                    label={`${pattern.name}, move by move`}
+                    label={`${item.name}, move by move`}
                   />
                   {player.position === 0 && !player.playing && (
                     <Button iconLeft="play" onClick={player.play} className="self-start" data-testid="watch-play">
@@ -371,6 +506,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
                 </Card>
               )}
               {(watchEnd || undoing) && undoCard}
+              {!undoing && <FlagCompare item={item} />}
             </>
           )}
 
@@ -384,6 +520,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
                       Start over
                     </Button>
                   </div>
+                  {holdFirst && follow.index === 0 && !follow.partial && <HoldLine item={item} />}
                   <MoveSequence moves={moves} size={moves.length > 12 ? 'sm' : 'md'} activeIndex={follow.index} label="Moves to do" />
                   <p className="min-h-12 text-base text-ink-muted" aria-live="polite" data-testid="try-line">
                     {tryDone ? (
@@ -403,6 +540,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
                 </Card>
               )}
               {(tryDone || undoing) && undoCard}
+              {!undoing && <FlagCompare item={item} />}
             </>
           )}
 
@@ -480,7 +618,7 @@ function Detail({ pattern }: { pattern: CubePattern }) {
               ) : (
                 <p className="flex items-start gap-2 text-sm text-ink-muted">
                   <Icon name="lightbulb" size={16} className="mt-0.5 shrink-0 text-cube-yellow-text" />
-                  Start with your real cube solved, white on top and green facing you. Prop this up where you can see it and do one move at a time.
+                  <span data-testid="follow-hold">Start with your real cube solved, {item.holdLine}. Prop this up where you can see it and do one move at a time.</span>
                 </p>
               )}
             </Card>

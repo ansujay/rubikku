@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { FLAGS, getFlag } from '../../cube'
 import { BADGES } from '../../store'
 import {
   AnimatedNumber,
@@ -15,7 +16,9 @@ import {
   CubeSwatch,
   cx,
   EmptyState,
+  FaceGrid,
   Field,
+  FlagArt,
   HoldButton,
   Icon,
   ICON_NAMES,
@@ -168,6 +171,39 @@ function CubeNetDemo() {
         </div>
       </div>
     </div>
+  )
+}
+
+function FlagDemo() {
+  const [grid, setGrid] = useState<(CubeColor | null)[]>(() => [...getFlag('flag-italy')!.grid])
+  const [cell, setCell] = useState<number | null>(4)
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
+        {FLAGS.map((f) => (
+          <div key={f.id} className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-ink">{f.name}</p>
+            <div className="flex items-center gap-3">
+              <FlagArt spec={f.art} size={84} label={`Flag of ${f.name}`} />
+              <Icon name="arrowRight" size={16} className="text-ink-muted" />
+              <FaceGrid colors={f.grid} size={14} label={`${f.name} on the cube`} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <Row label="Editable FaceGrid (arrow keys move, Enter or Space cycles the colour)" className="mt-6">
+        <FaceGrid
+          colors={grid}
+          size={44}
+          showLetters
+          selected={cell}
+          onCellClick={(i) => {
+            setCell(i)
+            setGrid((g) => g.map((c, j) => (j === i ? CUBE_COLORS[(CUBE_COLORS.indexOf(c ?? 'white') + 1) % CUBE_COLORS.length]! : c)))
+          }}
+        />
+      </Row>
+    </>
   )
 }
 
@@ -729,6 +765,10 @@ export default function KitchenSinkPage() {
 
       <Block title="Cube net" note="A flat, unfolded cube: U on top, L F R B in a row, D below. Read-only for previews; with onStickerClick every sticker is a button (arrow keys move across the net).">
         <CubeNetDemo />
+      </Block>
+
+      <Block title="Flags" note="FlagArt draws the real flag; FaceGrid is what it becomes on one cube face. All 21, with a hairline border so white flags read in both themes.">
+        <FlagDemo />
       </Block>
 
       <Block title="Stage tracker" note="The one drawing of the journey (StageTracker): strip, list with summaries, vertical. Done · current · to do · locked · peeked.">

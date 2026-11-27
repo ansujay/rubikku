@@ -4,7 +4,7 @@ A website that teaches a young beginner to solve a 3x3 cube, built around one in
 
 - **Learn**: a primer plus the eight stages of the layer-by-layer method, each with demos, guided practice, "Which is it?" recognition rounds, drills and a step on your real cube.
 - **Solve my cube**: enter your real cube's colours and get a guided, stage-by-stage solution, or find out where you are.
-- **Play, Notation, Algorithms, Patterns, Timer, Progress**: free play, a notation trainer, algorithm cards, a pattern gallery, a speed timer, badges and streaks.
+- **Play, Notation, Algorithms, Patterns, Timer, Progress**: free play, a notation trainer, algorithm cards, a pattern gallery with 21 country flags to make on the cube and a "make your own" face designer, a speed timer, badges and streaks.
 - Light and dark themes, progress saved in the browser, and it works offline once installed.
 
 ## Run it

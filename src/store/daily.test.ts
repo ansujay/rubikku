@@ -282,6 +282,8 @@ describe('every badge can be earned from events the features really send', () =>
       send('notation-round', { correct: day === 0 ? 7 : 10, total: 10 }, now)
       if (day < ALGORITHMS.length) send('algorithm-practised', { algorithmId: ALGORITHMS[day].id }, now)
       if (day < PATTERNS.length) send('pattern-made', { patternId: PATTERNS[day].id }, now)
+      if (day < 12) send('pattern-made', { patternId: `flag-f${day}` }, now)
+      if (day === 12) send('pattern-made', { patternId: 'flag-own' }, now)
       if (day === 8) send('solve-completed', { context: 'lesson' }, now)
       if (day === 9) send('real-cube-solved', {}, now)
       if (day >= 9) {
@@ -303,8 +305,8 @@ describe('every badge can be earned from events the features really send', () =>
     })
   }
 
-  it('has 30 badges, and enough patterns and algorithms for the collection badges', () => {
-    expect(BADGES).toHaveLength(30)
+  it('has 33 badges, and enough patterns and algorithms for the collection badges', () => {
+    expect(BADGES).toHaveLength(33)
     expect(PATTERNS.length).toBeGreaterThanOrEqual(12)
     expect(ALGORITHMS.length).toBeGreaterThanOrEqual(10)
     expect(NOTATION_MASTER_ROUNDS).toBeLessThanOrEqual(5)

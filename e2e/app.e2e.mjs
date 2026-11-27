@@ -465,6 +465,9 @@ const tests = {
       ['/progress', 'Progress'],
       ['/patterns', 'Patterns'],
       ['/patterns/checkerboard', 'Pattern'],
+      ['/patterns?tab=flags', 'Patterns'],
+      ['/patterns/flag-india', 'Pattern'],
+      ['/patterns?tab=design&face=OOOWBWGGG', 'Patterns'],
       ['/settings', 'Settings'],
       ['/kitchen-sink', 'Kitchen sink'],
       ['/nowhere', 'Page not found'],
@@ -479,7 +482,8 @@ const tests = {
         .waitForFunction(
           (route) => {
             const pages = [...document.querySelectorAll('main [data-route]')]
-            const own = pages.length === 1 && pages[0].dataset.route === route ? pages[0] : null
+            // data-route is the path alone: "/patterns?tab=flags" is the /patterns page.
+            const own = pages.length === 1 && pages[0].dataset.route === route.split('?')[0] ? pages[0] : null
             return !!own && own.textContent.trim().length > 30 && !own.querySelector('[role="status"][aria-label="Loading"]')
           },
           route,

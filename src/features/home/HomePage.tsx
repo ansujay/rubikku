@@ -287,7 +287,7 @@ const LINKS: { to: string; title: string; line: string; icon: IconName }[] = [
   { to: '/solve', title: 'Solve my cube', line: 'Stuck? Show us your real cube.', icon: 'wand' },
   { to: '/timer', title: 'Timer', line: 'Scramble, solve, beat your best.', icon: 'timer' },
   { to: '/algorithms', title: 'Algorithms', line: 'Every sequence, one card each.', icon: 'cards' },
-  { to: '/patterns', title: 'Patterns', line: 'Checkerboards and other tricks.', icon: 'grid' },
+  { to: '/patterns', title: 'Patterns', line: 'Checkerboards, flags and other tricks.', icon: 'grid' },
   { to: '/progress', title: 'Progress', line: 'Badges, levels and your streak.', icon: 'trophy' },
 ]
 
