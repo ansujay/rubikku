@@ -413,9 +413,25 @@ export function MakeableDetail({ item }: { item: Makeable }) {
           </motion.span>
           )}
         </AnimatePresence>
+        {/* The mode bar stays in one place in every mode, so switching never moves the control
+            just tapped (on phones, Real cube puts its panel above the cube). On a wide screen it
+            shares the title row, pinned to the right edge (the title takes up the slack), so the
+            badge coming and going never nudges it; narrower, it gets a row of its own. */}
+        <SegmentedControl
+          ariaLabel="Mode"
+          fullWidth
+          className="basis-full xl:w-sm xl:basis-auto"
+          value={mode}
+          onChange={setMode}
+          items={[
+            { value: 'watch', label: 'Watch' },
+            { value: 'try', label: 'Try it' },
+            { value: 'follow', label: 'Real cube' },
+          ]}
+        />
       </Reveal>
 
-      <Reveal className={cx('grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-5', mode === 'follow' && "max-lg:[grid-template-areas:'side'_'stage']")}>
+      <Reveal className={cx('grid items-start gap-4 [--chrome-h:22.5rem] xl:[--chrome-h:18rem] lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-5', mode === 'follow' && "max-lg:[grid-template-areas:'side'_'stage']")}>
         <motion.div
           ref={stageBox}
           initial={{ scale: 0.94, opacity: 0 }}
@@ -426,7 +442,7 @@ export function MakeableDetail({ item }: { item: Makeable }) {
           <CubeStage
             label={`${item.name} on the cube`}
             fit="square"
-            maxViewHeight={mode === 'follow' ? 'calc(100dvh - 22rem)' : 'calc(100dvh - 18rem)'}
+            maxViewHeight={mode === 'follow' ? 'calc(100dvh - var(--chrome-h) - 4rem)' : 'calc(100dvh - var(--chrome-h))'}
             minViewHeight="15rem"
             className="w-full"
             controls={
@@ -473,18 +489,6 @@ export function MakeableDetail({ item }: { item: Makeable }) {
         </motion.div>
 
         <div className={cx('flex min-w-0 flex-col gap-4', mode === 'follow' && 'max-lg:[grid-area:side]')}>
-          <SegmentedControl
-            ariaLabel="Mode"
-            fullWidth
-            value={mode}
-            onChange={setMode}
-            items={[
-              { value: 'watch', label: 'Watch' },
-              { value: 'try', label: 'Try it' },
-              { value: 'follow', label: 'Real cube' },
-            ]}
-          />
-
           {mode === 'watch' && player && (
             <>
               {!undoing && (

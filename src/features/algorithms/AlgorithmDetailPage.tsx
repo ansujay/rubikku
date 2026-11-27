@@ -192,14 +192,29 @@ function Detail({ algorithm }: { algorithm: BeginnerAlgorithm }) {
           )}
         </div>
         <StatusBadge status={status} size="md" />
+        {/* The mode bar stays in one place in both modes, so switching never moves the control
+            just tapped (Watch has a playback bar under the cube; Practise does not). On a wide
+            screen it shares the title row, pinned to the right edge (the title takes up the slack),
+            so the badge changing never nudges it; narrower, it gets a row of its own. */}
+        <SegmentedControl
+          ariaLabel="Mode"
+          fullWidth
+          className="basis-full xl:w-xs xl:basis-auto"
+          value={mode}
+          onChange={(value) => setParam('mode', value === 'practise' ? 'practise' : null)}
+          items={[
+            { value: 'watch', label: 'Watch', icon: 'eye' },
+            { value: 'practise', label: 'Practise', icon: 'target' },
+          ]}
+        />
       </Reveal>
 
-      <Reveal className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-5">
+      <Reveal className="grid items-start gap-4 [--chrome-h:22.5rem] xl:[--chrome-h:18rem] lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-5">
         <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={springs.gentle} className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-6">
           <CubeStage
             label={`${algorithm.name} on the cube`}
             fit="square"
-            maxViewHeight="calc(100dvh - 18rem)"
+            maxViewHeight="calc(100dvh - var(--chrome-h))"
             minViewHeight="16rem"
             className="w-full"
             controls={<StageControls view={cube.view} status={mirrored ? <Badge tone="accent">Mirrored</Badge> : undefined} />}
@@ -234,17 +249,6 @@ function Detail({ algorithm }: { algorithm: BeginnerAlgorithm }) {
         </motion.div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <SegmentedControl
-            ariaLabel="Mode"
-            fullWidth
-            value={mode}
-            onChange={(value) => setParam('mode', value === 'practise' ? 'practise' : null)}
-            items={[
-              { value: 'watch', label: 'Watch', icon: 'eye' },
-              { value: 'practise', label: 'Practise', icon: 'target' },
-            ]}
-          />
-
           {watching && player && (
             <Card padding="md" className="flex flex-col gap-3" data-testid="watch-panel">
               <MoveSequence
