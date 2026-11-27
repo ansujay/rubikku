@@ -1,4 +1,4 @@
-import { PATTERNS } from '../../cube'
+import { FLAGS, PATTERNS } from '../../cube'
 import { createPersistedStore, isRecord } from '../../store'
 
 export interface PatternsState {
@@ -10,10 +10,13 @@ export interface PatternsState {
   setFollowAt: (id: string, index: number) => void
 }
 
+/** Everything with a saved place: the tricks and the curated flags. */
+const MAKEABLE = [...PATTERNS, ...FLAGS]
+
 function positions(saved: unknown): Record<string, number> {
   const out: Record<string, number> = {}
   if (!isRecord(saved)) return out
-  for (const pattern of PATTERNS) {
+  for (const pattern of MAKEABLE) {
     const value = saved[pattern.id]
     if (typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= pattern.moves.length) out[pattern.id] = value
   }
@@ -23,7 +26,8 @@ function positions(saved: unknown): Record<string, number> {
 export const usePatterns = createPersistedStore<PatternsState>(
   {
     name: 'patterns',
-    version: 1,
+    // v2: flag ids (`flag-…`) are kept too. The shape did not change, so old saves pass through.
+    version: 2,
     migrate: (saved) => saved,
     sanitize: (saved) => (isRecord(saved) ? { tryAt: positions(saved.tryAt), followAt: positions(saved.followAt) } : {}),
   },
